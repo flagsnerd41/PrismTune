@@ -320,6 +320,7 @@ fun Thumbnail(
                     .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            FairyLightsOverlay()
             // Now Playing header
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
