@@ -27,9 +27,18 @@ import kotlin.math.sin
 @Composable
 fun FairyLights(
     modifier: Modifier = Modifier,
-    lightColor: Color = Color(0xFFFFE2A8),
+    firstColor: Color = Color(0xFFFFE2A8),
+    secondColor: Color = Color(0xFF9CCBFF),
+    windSpeed: Float = 1f,
 ) {
+    val safeSpeed = windSpeed.coerceIn(1f, 4f)
     val transition = rememberInfiniteTransition(label = "fairy")
+    val windProgress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween((12000f / safeSpeed).toInt().coerceAtLeast(1500), easing = LinearEasing)),
+        label = "windProgress",
+    )
     val twinkleA by transition.animateFloat(
         initialValue = 0.55f,
         targetValue = 1f,
@@ -57,8 +66,10 @@ fun FairyLights(
         )
         for (i in 0 until count) {
             val t = (i + 0.5f) / count
-            val x = t * w
-            val y = 4f * sag * t * (1f - t)
+            val phase = windProgress * 2.0 * PI
+            val sway = sin(phase + i * 0.55).toFloat() * (3.5f + safeSpeed * 1.8f).dp.toPx()
+            val x = t * w + sway
+            val y = 4f * sag * t * (1f - t) + cos(phase + i * 0.38).toFloat() * (1.2f + safeSpeed * 0.8f).dp.toPx()
             val a = if (i % 2 == 0) twinkleA else twinkleB
             val drop = 10.dp.toPx()
             drawLine(
@@ -67,7 +78,8 @@ fun FairyLights(
                 Offset(x, y + drop),
                 strokeWidth = 1.5.dp.toPx(),
             )
-            drawStar(Offset(x, y + drop + 6.dp.toPx()), 7.dp.toPx(), lightColor, a)
+            val color = if (i % 2 == 0) firstColor else secondColor
+            drawStar(Offset(x + sway * 0.18f, y + drop + 6.dp.toPx()), 7.dp.toPx(), color, a)
         }
     }
 }
@@ -89,11 +101,14 @@ private fun DrawScope.drawStar(center: Offset, radius: Float, color: Color, alph
 }
 
 @Composable
-fun FairyLightsOverlay(modifier: Modifier = Modifier) {
+fun FairyLightsOverlay(modifier: Modifier = Modifier, firstColor: Color = Color(0xFFFFE2A8), secondColor: Color = Color(0xFF9CCBFF), windSpeed: Float = 1f) {
     FairyLights(
         modifier = modifier.layout { measurable, constraints ->
             val placeable = measurable.measure(constraints)
             layout(placeable.width, 0) { placeable.place(0, 0) }
         },
+        firstColor = firstColor,
+        secondColor = secondColor,
+        windSpeed = windSpeed,
     )
 }
