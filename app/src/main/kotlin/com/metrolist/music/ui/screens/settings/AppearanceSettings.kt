@@ -206,7 +206,7 @@ fun AppearanceSettings(
     val (playerButtonsStyle, onPlayerButtonsStyleChange) =
         rememberEnumPreference(
             PlayerButtonsStyleKey,
-            defaultValue = PlayerButtonsStyle.DEFAULT,
+            defaultValue = PlayerButtonsStyle.PRIMARY,
         )
     val (lyricsPosition, onLyricsPositionChange) =
         rememberEnumPreference(
@@ -249,7 +249,7 @@ fun AppearanceSettings(
     val (squigglySlider, onSquigglySliderChange) =
         rememberPreference(
             SquigglySliderKey,
-            defaultValue = false,
+            defaultValue = true,
         )
     val (swipeThumbnail, onSwipeThumbnailChange) =
         rememberPreference(
