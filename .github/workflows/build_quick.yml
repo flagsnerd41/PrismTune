@@ -35,8 +35,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build PrismTune APK (No Lint)
-        run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
+      - name: Build PrismTune debug APK
+        run: ./gradlew --console=plain assembleFossDebug --warning-mode summary -x lint -x lintFossDebug
         env:
           METROLIST_APPLICATION_ID: com.prismtune.music.test
           METROLIST_APP_NAME: PrismTune Testing
@@ -45,24 +45,11 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Sign APK
-        uses: ilharp/sign-android-release@v2.0.0
-        with:
-          releaseDir: app/build/outputs/apk/foss/release/
-          signingKey: ${{ secrets.KEYSTORE }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 36.0.0
-
-      - name: Move signed APK
-        run: |
-          OUTPUT_DIR="app/build/outputs/apk/foss/release"
-          mkdir -p "$OUTPUT_DIR/out"
-          find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | xargs -I{} mv {} "$OUTPUT_DIR/out/PrismTune-universal-test-release.apk"
-
-      - name: Upload Signed APK
+      # Debug APKs are automatically signed with Android's debug key, so no
+      # private keystore secrets are required for device testing.
+      - name: Upload PrismTune debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: PrismTune-universal-test-release
-          path: app/build/outputs/apk/foss/release/out/*
+          name: PrismTune-debug-apk
+          path: app/build/outputs/apk/foss/debug/*.apk
+          if-no-files-found: error
