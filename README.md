@@ -14,7 +14,7 @@
   </p>
 
   <p align="center">
-    <strong>Redefining the YouTube Music Experience on Android.</strong>
+    <strong>A liquid-glass-inspired music experience for Android, built on ArchiveTune.</strong>
     <br />
     <em>It’s high-performance, privacy-focused, and packed with features for people who really care about their experience.</em>
   </p>
