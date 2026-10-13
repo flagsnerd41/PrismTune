@@ -1,4 +1,4 @@
-name: Quick Test Build
+name: PrismTune APK (Manual Build)
 
 # Manual only: on push this built exactly the same FOSS release APK as the
 # "Build Release (foss)" job in build.yml, doubling the cost of every push.
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build_quick:
-    name: Quick Universal Release Build
+    name: Build PrismTune APK
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
 
@@ -36,11 +36,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK (No Lint)
+      - name: Build PrismTune APK (No Lint)
         run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
         env:
-          METROLIST_APPLICATION_ID: com.metrolist.music.test
-          METROLIST_APP_NAME: Metrolist Testing
+          METROLIST_APPLICATION_ID: com.prismtune.music.test
+          METROLIST_APP_NAME: PrismTune Testing
           PULL_REQUEST: "false"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
@@ -65,5 +65,5 @@ jobs:
       - name: Upload Signed APK
         uses: actions/upload-artifact@v7
         with:
-          name: app-universal-test-release
+          name: PrismTune-universal-test-release
           path: app/build/outputs/apk/foss/release/out/*
