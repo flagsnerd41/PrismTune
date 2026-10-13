@@ -13,15 +13,18 @@ object PlayerColorExtractor {
         palette: Palette,
         fallbackColor: Int,
     ): List<Color> {
-        val primaryColor = Color(palette.rankedColors(1, fallbackColor).first())
-        return listOf(
-            primaryColor,
-            primaryColor.copy(
-                red = primaryColor.red * 0.6f,
-                green = primaryColor.green * 0.6f,
-                blue = primaryColor.blue * 0.6f,
-            ),
-            Color.Black,
+        val rankedColors = palette.rankedColors(3, fallbackColor)
+        val primaryColor = Color(rankedColors.first())
+        val accentColor = Color(
+            palette.vibrantSwatch?.rgb
+                ?: palette.lightVibrantSwatch?.rgb
+                ?: rankedColors.getOrElse(1) { fallbackColor },
         )
+        val deepColor = primaryColor.copy(
+            red = primaryColor.red * 0.42f,
+            green = primaryColor.green * 0.42f,
+            blue = primaryColor.blue * 0.42f,
+        )
+        return listOf(primaryColor, accentColor, deepColor, Color.Black)
     }
 }
