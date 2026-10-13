@@ -2,7 +2,7 @@
 
   <img src="https://github.com/rukamori/ArchiveTune/blob/main/fastlane/metadata/android/en-US/images/icon.png" width="160" height="160" alt="ArchiveTune Logo" style="border-radius: 22%">
 
-  <h1>ArchiveTune</h1>
+  <h1>PrismTune</h1>
 
   <p align="center">
     <a href="README.md">
