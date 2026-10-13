@@ -768,7 +768,7 @@ private fun PreferenceGroupScope.playbackPerformancePreferences(
     val data = (state as? PlaybackPerformanceSettingsUiState.Success)?.data
 
     val lowDataModeEnabled = data?.lowDataModeEnabled ?: false
-    val preloadNextSongEnabled = data?.preloadNextSongEnabled ?: false
+    val preloadNextSongEnabled = data?.preloadNextSongEnabled ?: !lowDataModeEnabled
     val lowDataModeControlEnabled =
         when (state) {
             PlaybackPerformanceSettingsUiState.Loading,
