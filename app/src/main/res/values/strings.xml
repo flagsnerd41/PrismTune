@@ -1132,4 +1132,10 @@
     <string name="scheduled_backup_update_failed">Scheduled backup settings could not be saved</string>
     <string name="gatekeeper_connection_blocked">Connection blocked by ArchiveTune Remote. This app could not be verified as an official ArchiveTune build. Install an official build from https://github.com/rukamori/ArchiveTune or https://t.me/ArchiveTuneGC.</string>
     <string name="local_songs_metadata_unavailable">Imported %1$d songs. Online metadata is unavailable; file tags were kept.</string>
+    <string name="prismtune_fairy_lights">Fairy lights</string>
+    <string name="prismtune_fairy_lights_description">Show drifting, two-color fairy lights in the expanded player.</string>
+    <string name="prismtune_wind">Wind and leaves</string>
+    <string name="prismtune_wind_description">Enable or disable the breeze and drifting leaves.</string>
+    <string name="prismtune_wind_speed">Wind speed</string>
+    <string name="prismtune_wind_speed_description">Controls how quickly the leaves and fairy lights drift.</string>
 </resources>

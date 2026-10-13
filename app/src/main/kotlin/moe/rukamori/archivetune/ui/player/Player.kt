@@ -171,6 +171,9 @@ import moe.rukamori.archivetune.constants.PlayerButtonsStyle
 import moe.rukamori.archivetune.constants.PlayerButtonsStyleKey
 import moe.rukamori.archivetune.constants.PlayerCustomBlurKey
 import moe.rukamori.archivetune.constants.PlayerCustomBrightnessKey
+import moe.rukamori.archivetune.constants.PrismTuneFairyLightsEnabledKey
+import moe.rukamori.archivetune.constants.PrismTuneWindEnabledKey
+import moe.rukamori.archivetune.constants.PrismTuneWindSpeedKey
 import moe.rukamori.archivetune.constants.PlayerCustomContrastKey
 import moe.rukamori.archivetune.constants.PlayerCustomImageUriKey
 import moe.rukamori.archivetune.constants.PlayerDesignStyle
@@ -362,6 +365,9 @@ fun BottomSheetPlayer(
     val (playerCustomBlur) = rememberPreference(PlayerCustomBlurKey, 0f)
     val (playerCustomContrast) = rememberPreference(PlayerCustomContrastKey, 1f)
     val (playerCustomBrightness) = rememberPreference(PlayerCustomBrightnessKey, 1f)
+    val (prismTuneFairyLightsEnabled) = rememberPreference(PrismTuneFairyLightsEnabledKey, true)
+    val (prismTuneWindEnabled) = rememberPreference(PrismTuneWindEnabledKey, true)
+    val (prismTuneWindSpeed) = rememberPreference(PrismTuneWindSpeedKey, 2)
 
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
     val (blurRadius) = rememberPreference(BlurRadiusKey, 48f)
@@ -1960,7 +1966,26 @@ fun BottomSheetPlayer(
             )
         }
         if (state.isExpanded && !aodModeEnabled) {
-            WindblownLeavesOverlay(modifier = Modifier.fillMaxSize())
+            if (prismTuneWindEnabled) {
+                WindblownLeavesOverlay(
+                    modifier = Modifier.fillMaxSize(),
+                    windSpeed = prismTuneWindSpeed.toFloat(),
+                )
+            }
+            if (prismTuneFairyLightsEnabled) {
+                val currentArtist = mediaMetadata?.artists?.joinToString(" ") { it.name }.orEmpty()
+                val isTvGirl = currentArtist.contains("tv girl", ignoreCase = true)
+                val fairyFirstColor =
+                    if (isTvGirl) Color(0xFFFF78C8) else gradientColors.getOrNull(0) ?: Color(0xFFFFE2A8)
+                val fairySecondColor =
+                    if (isTvGirl) Color(0xFF83BFFF) else gradientColors.getOrNull(1) ?: Color(0xFF9CCBFF)
+                FairyLightsOverlay(
+                    modifier = Modifier.fillMaxWidth(),
+                    firstColor = fairyFirstColor,
+                    secondColor = fairySecondColor,
+                    windSpeed = prismTuneWindSpeed.toFloat(),
+                )
+            }
         }
 
     }
@@ -2578,13 +2603,13 @@ private fun Modifier.littlePlayerOverlayGestures(
  * A soft autumn breeze for the expanded player. Draw-only, so playback controls remain usable.
  */
 @Composable
-private fun WindblownLeavesOverlay(modifier: Modifier = Modifier) {
+private fun WindblownLeavesOverlay(modifier: Modifier = Modifier, windSpeed: Float = 2f) {
     val breeze = rememberInfiniteTransition(label = "prismTuneBreeze")
     val progress by breeze.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 9800, easing = LinearEasing),
+            animation = tween(durationMillis = (19600f / windSpeed.coerceIn(1f, 4f)).toInt().coerceAtLeast(2000), easing = LinearEasing),
         ),
         label = "leafDrift",
     )
@@ -2608,7 +2633,7 @@ private fun WindblownLeavesOverlay(modifier: Modifier = Modifier) {
             val x = travel * (screenWidth + 90.dp.toPx()) - 45.dp.toPx()
             val sway = kotlin.math.sin((travel * 2.0 * Math.PI) + index * 1.7).toFloat()
             val y = ((index * 0.173f + progress * 0.42f) % 1f) * screenHeight +
-                sway * (18.dp.toPx() + index % 3 * 5.dp.toPx())
+                sway * (18.dp.toPx() + index % 3 * 5.dp.toPx()) * (windSpeed.coerceIn(1f, 4f) / 2f)
             val leafWidth = (9 + index % 4 * 2).dp.toPx()
             val leafHeight = leafWidth * 1.65f
             val rotation = (sway * 42f) + travel * 150f + index * 29f

@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -48,6 +49,9 @@ import moe.rukamori.archivetune.constants.AutoStartOnBluetoothKey
 import moe.rukamori.archivetune.constants.CrossfadeDurationKey
 import moe.rukamori.archivetune.constants.CrossfadeEnabledKey
 import moe.rukamori.archivetune.constants.CrossfadeGaplessKey
+import moe.rukamori.archivetune.constants.PrismTuneFairyLightsEnabledKey
+import moe.rukamori.archivetune.constants.PrismTuneWindEnabledKey
+import moe.rukamori.archivetune.constants.PrismTuneWindSpeedKey
 import moe.rukamori.archivetune.constants.DeviceMutePlaybackRecoveryVolumeKey
 import moe.rukamori.archivetune.constants.ExternalDownloaderEnabledKey
 import moe.rukamori.archivetune.constants.ExternalDownloaderPackageKey
@@ -241,6 +245,12 @@ fun PlayerSettings(navController: NavController) {
             CrossfadeGaplessKey,
             defaultValue = true,
         )
+    val (prismTuneFairyLightsEnabled, onPrismTuneFairyLightsEnabledChange) =
+        rememberPreference(PrismTuneFairyLightsEnabledKey, defaultValue = true)
+    val (prismTuneWindEnabled, onPrismTuneWindEnabledChange) =
+        rememberPreference(PrismTuneWindEnabledKey, defaultValue = true)
+    val (prismTuneWindSpeed, onPrismTuneWindSpeedChange) =
+        rememberPreference(PrismTuneWindSpeedKey, defaultValue = 2)
 
     val (artistSeparators, onArtistSeparatorsChange) =
         rememberPreference(
@@ -391,6 +401,44 @@ fun PlayerSettings(navController: NavController) {
                         checked = crossfadeGapless,
                         onCheckedChange = onCrossfadeGaplessChange,
                         isEnabled = crossfadeEnabled,
+                    )
+                }
+
+                item {
+                    SwitchPreference(
+                        title = { Text(stringResource(R.string.prismtune_fairy_lights)) },
+                        description = stringResource(R.string.prismtune_fairy_lights_description),
+                        checked = prismTuneFairyLightsEnabled,
+                        onCheckedChange = onPrismTuneFairyLightsEnabledChange,
+                    )
+                }
+
+                item {
+                    SwitchPreference(
+                        title = { Text(stringResource(R.string.prismtune_wind)) },
+                        description = stringResource(R.string.prismtune_wind_description),
+                        checked = prismTuneWindEnabled,
+                        onCheckedChange = onPrismTuneWindEnabledChange,
+                    )
+                }
+
+                item {
+                    PreferenceEntry(
+                        title = { Text(stringResource(R.string.prismtune_wind_speed)) },
+                        description = stringResource(R.string.prismtune_wind_speed_description),
+                        isEnabled = prismTuneWindEnabled,
+                        content = {
+                            Column {
+                                Text("${prismTuneWindSpeed} / 4")
+                                Slider(
+                                    value = prismTuneWindSpeed.toFloat(),
+                                    onValueChange = { onPrismTuneWindSpeedChange(it.toInt().coerceIn(1, 4)) },
+                                    valueRange = 1f..4f,
+                                    steps = 2,
+                                    enabled = prismTuneWindEnabled,
+                                )
+                            }
+                        },
                     )
                 }
 
@@ -720,7 +768,7 @@ private fun PreferenceGroupScope.playbackPerformancePreferences(
     val data = (state as? PlaybackPerformanceSettingsUiState.Success)?.data
 
     val lowDataModeEnabled = data?.lowDataModeEnabled ?: false
-    val preloadNextSongEnabled = data?.preloadNextSongEnabled ?: false
+    val preloadNextSongEnabled = data?.preloadNextSongEnabled ?: !lowDataModeEnabled
     val lowDataModeControlEnabled =
         when (state) {
             PlaybackPerformanceSettingsUiState.Loading,

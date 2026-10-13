@@ -253,14 +253,14 @@ fun PlayerTitleSection(
     AnimatedContent(
         targetState = mediaMetadata.title,
         transitionSpec = {
-            (fadeIn(animationSpec = tween(180)) +
+            (fadeIn(animationSpec = tween(120)) +
                 slideInVertically(
-                    animationSpec = tween(180),
+                    animationSpec = tween(120),
                     initialOffsetY = { it / 6 },
                 )) togetherWith
-                (fadeOut(animationSpec = tween(140)) +
+                (fadeOut(animationSpec = tween(90)) +
                     slideOutVertically(
-                        animationSpec = tween(140),
+                        animationSpec = tween(90),
                         targetOffsetY = { -it / 6 },
                     ))
         },
