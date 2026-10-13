@@ -12,6 +12,8 @@ package moe.rukamori.archivetune.ui.component
 import android.os.SystemClock
 import android.view.ViewConfiguration
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -41,6 +43,8 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -84,15 +88,31 @@ fun FloatingNavigationToolbar(
                 .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
         contentAlignment = Alignment.Center,
     ) {
+        // A softly diffused underlay adds depth to the floating glass bar.
+        Box(
+            modifier =
+                Modifier
+                    .widthIn(max = NavigationBarMaxWidth)
+                    .fillMaxWidth()
+                    .height(NavigationBarHeight)
+                    .clip(navigationShape)
+                    .background(navigationContainerColor.copy(alpha = 0.46f))
+                    .blur(18.dp),
+        )
         Surface(
             modifier =
                 Modifier
                     .widthIn(max = NavigationBarMaxWidth)
                     .fillMaxWidth()
-                    .height(NavigationBarHeight),
+                    .height(NavigationBarHeight)
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.12f),
+                        shape = navigationShape,
+                    ),
             shape = navigationShape,
-            color = navigationContainerColor,
-            tonalElevation = NavigationBarDefaults.Elevation,
+            color = navigationContainerColor.copy(alpha = 0.78f),
+            tonalElevation = 0.dp,
             shadowElevation = NavigationBarDefaults.Elevation,
         ) {
             ShortNavigationBar(
