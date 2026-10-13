@@ -240,7 +240,7 @@ fun BottomSheetPlayer(
     )
     val playerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
-        defaultValue = PlayerButtonsStyle.DEFAULT,
+        defaultValue = PlayerButtonsStyle.PRIMARY,
     )
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -327,7 +327,7 @@ fun BottomSheetPlayer(
     val isMuted by playerConnection.isMuted.collectAsStateWithLifecycle()
 
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.DEFAULT)
-    val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = false)
+    val squigglySlider by rememberPreference(SquigglySliderKey, defaultValue = true)
 
     // Listen Together state (reactive)
     val listenTogetherManager = LocalListenTogetherManager.current
