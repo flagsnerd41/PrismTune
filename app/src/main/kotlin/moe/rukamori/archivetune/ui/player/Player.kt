@@ -23,12 +23,17 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -91,11 +96,13 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toArgb
@@ -1952,6 +1959,10 @@ fun BottomSheetPlayer(
                 lyricsText = currentLyricsEntity?.lyrics,
             )
         }
+        if (state.isExpanded && !aodModeEnabled) {
+            WindblownLeavesOverlay(modifier = Modifier.fillMaxSize())
+        }
+
     }
 
     val activePlaybackError = playbackError
@@ -2561,3 +2572,81 @@ private fun Modifier.littlePlayerOverlayGestures(
             }
         }
     }
+
+
+/**
+ * A soft autumn breeze for the expanded player. Draw-only, so playback controls remain usable.
+ */
+@Composable
+private fun WindblownLeavesOverlay(modifier: Modifier = Modifier) {
+    val breeze = rememberInfiniteTransition(label = "prismTuneBreeze")
+    val progress by breeze.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 9800, easing = LinearEasing),
+        ),
+        label = "leafDrift",
+    )
+
+    Canvas(modifier = modifier) {
+        val screenWidth = size.width
+        val screenHeight = size.height
+        if (screenWidth <= 0f || screenHeight <= 0f) return@Canvas
+
+        val leafColors = listOf(
+            Color(0xFFDDA15E).copy(alpha = 0.68f),
+            Color(0xFFB86F3C).copy(alpha = 0.62f),
+            Color(0xFF9B9B55).copy(alpha = 0.55f),
+            Color(0xFFE7C887).copy(alpha = 0.58f),
+        )
+
+        // Each leaf follows a slightly different drifting path, like a gentle cross-screen gust.
+        for (index in 0 until 13) {
+            val seed = index / 13f
+            val travel = (progress + seed) % 1f
+            val x = travel * (screenWidth + 90.dp.toPx()) - 45.dp.toPx()
+            val sway = kotlin.math.sin((travel * 2.0 * Math.PI) + index * 1.7).toFloat()
+            val y = ((index * 0.173f + progress * 0.42f) % 1f) * screenHeight +
+                sway * (18.dp.toPx() + index % 3 * 5.dp.toPx())
+            val leafWidth = (9 + index % 4 * 2).dp.toPx()
+            val leafHeight = leafWidth * 1.65f
+            val rotation = (sway * 42f) + travel * 150f + index * 29f
+
+            rotate(rotation, pivot = Offset(x, y)) {
+                drawOval(
+                    color = leafColors[index % leafColors.size],
+                    topLeft = Offset(x - leafWidth / 2f, y - leafHeight / 2f),
+                    size = Size(leafWidth, leafHeight),
+                )
+                drawLine(
+                    color = Color(0xFFFFE5B3).copy(alpha = 0.34f),
+                    start = Offset(x, y - leafHeight * 0.36f),
+                    end = Offset(x, y + leafHeight * 0.36f),
+                    strokeWidth = 0.8.dp.toPx(),
+                )
+            }
+        }
+
+        // Fine, translucent wind trails give the movement a little atmosphere.
+        for (index in 0 until 3) {
+            val phase = (progress + index * 0.31f) % 1f
+            val y = screenHeight * (0.22f + index * 0.24f) +
+                kotlin.math.sin(progress * 2.0 * Math.PI + index).toFloat() * 16.dp.toPx()
+            val startX = phase * (screenWidth + 180.dp.toPx()) - 90.dp.toPx()
+            val endX = startX + screenWidth * 0.23f
+            drawLine(
+                color = Color(0xFFFFE8C5).copy(alpha = 0.13f),
+                start = Offset(startX, y),
+                end = Offset(endX, y - 9.dp.toPx()),
+                strokeWidth = 1.dp.toPx(),
+            )
+            drawLine(
+                color = Color(0xFFFFE8C5).copy(alpha = 0.08f),
+                start = Offset(startX + 12.dp.toPx(), y + 5.dp.toPx()),
+                end = Offset(endX - 8.dp.toPx(), y - 2.dp.toPx()),
+                strokeWidth = 0.7.dp.toPx(),
+            )
+        }
+    }
+}
