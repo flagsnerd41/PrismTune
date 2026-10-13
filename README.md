@@ -4,7 +4,7 @@
 
 ### Your music. Your atmosphere.
 
-**A liquid-glass-inspired Android music player, built on the open-source ArchiveTune project.**
+**A refined Android music player, built on the open-source ArchiveTune project.**
 
 A personal fork exploring softer motion, translucent surfaces, and a more expressive listening experience. PrismTune is a work in progress.
 
@@ -22,7 +22,7 @@ A personal fork exploring softer motion, translucent surfaces, and a more expres
 
 ## 🌈 About PrismTune
 
-PrismTune is an independent Android music-player fork focused on a **liquid-glass-inspired interface**: smooth transitions, subtle visual depth, and a listening experience that feels polished rather than cluttered.
+PrismTune is an independent Android music-player fork focused on a polished, atmospheric interface with smooth transitions, subtle visual depth, and a listening experience that feels refined rather than cluttered.
 
 It is based on [ArchiveTune](https://github.com/rukamori/ArchiveTune), an open-source music player built with Kotlin and Jetpack Compose. PrismTune keeps developing from that foundation while exploring its own visual identity and improvements.
 
@@ -31,7 +31,7 @@ It is based on [ArchiveTune](https://github.com/rukamori/ArchiveTune), an open-s
 
 ## ✨ Current direction
 
-- **Liquid-glass-inspired visuals** — translucent layers and a softer, atmospheric player experience.
+- **Refined visuals** — subtle depth and a softer, atmospheric player experience.
 - **Smoother playback progress** — animated progress updates with direct interaction while seeking.
 - **Subtle motion** — polished title transitions and gentle visual animation in the expanded player.
 - **A familiar music-player foundation** — build on ArchiveTune's existing playback and discovery features while PrismTune develops.
