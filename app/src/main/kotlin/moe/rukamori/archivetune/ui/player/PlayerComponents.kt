@@ -24,6 +24,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -250,8 +252,19 @@ fun PlayerTitleSection(
         )
     AnimatedContent(
         targetState = mediaMetadata.title,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "",
+        transitionSpec = {
+            (fadeIn(animationSpec = tween(180)) +
+                slideInVertically(
+                    animationSpec = tween(180),
+                    initialOffsetY = { it / 6 },
+                )) togetherWith
+                (fadeOut(animationSpec = tween(140)) +
+                    slideOutVertically(
+                        animationSpec = tween(140),
+                        targetOffsetY = { -it / 6 },
+                    ))
+        },
+        label = "prismTuneTitleTransition",
     ) { title ->
         PlayerTitleText(
             title = title,
@@ -764,9 +777,17 @@ fun PlayerSlider(
     val safeDuration = if (duration <= 0L) 0f else duration.toFloat()
     val safeValue = (sliderPosition ?: position).toFloat().coerceIn(0f, maxOf(0f, safeDuration))
 
+    // Smooth playback-driven updates, but keep direct control while the user is seeking.
+    val animatedPlaybackValue by animateFloatAsState(
+        targetValue = safeValue,
+        animationSpec = tween(durationMillis = 160, easing = LinearEasing),
+        label = "prismTunePlaybackProgress",
+    )
+    val displayedValue = if (sliderPosition != null) safeValue else animatedPlaybackValue
+
     StyledPlaybackSlider(
         sliderStyle = sliderStyle,
-        value = safeValue,
+        value = displayedValue,
         valueRange = 0f..maxOf(1f, safeDuration),
         onValueChange = { onValueChange(it.toLong()) },
         onValueChangeFinished = onValueChangeFinished,
