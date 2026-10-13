@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -217,7 +218,14 @@ private fun NewMiniPlayer(
             MiniPlayerBackground(
                 style = effectiveBackgroundStyle,
                 palette = backgroundPalette,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().blur(16.dp),
+            )
+            // A light glass tint keeps the artwork colors atmospheric without washing out controls.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.10f)),
             )
             NewMiniPlayerContent(
                 position = position,
@@ -290,7 +298,7 @@ private fun MiniPlayerBackground(
     when (style) {
         MiniPlayerBackgroundStyle.THEME -> {
             Box(
-                modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.84f)),
             )
         }
 
