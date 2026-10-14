@@ -1,6 +1,6 @@
 name: PrismTune APK (Manual Build)
 
-# Manual-only test build for the PrismTune feature branch.
+# Build the optimized PrismTune test APK on pushes to the feature branch or manually.
 on:
   workflow_dispatch:
   push:
@@ -38,33 +38,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Create Android debug keystore
-        run: |
-          mkdir -p "$HOME/.android"
-          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
-
-      - name: Build PrismTune debug APK
-        run: ./gradlew --console=plain assembleFossDebug --warning-mode summary -x lint -x lintFossDebug
-        env:
-          METROLIST_APPLICATION_ID: com.prismtune.music.test
-          METROLIST_APP_NAME: PrismTune Testing
-          PULL_REQUEST: "false"
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
-          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
-
-      # Debug APKs are automatically signed with Android's debug key, so no
-      # private keystore secrets are required for device testing.
-      - name: Upload PrismTune debug APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: PrismTune-debug-apk
-          path: app/build/outputs/apk/foss/debug/*.apk
-          if-no-files-found: error
-
-      # A temporary CI-only key signs this optimized test build. It is not a
-      # production signing key. Use a distinct application ID so both APKs
-      # can be installed side-by-side for a fair performance comparison.
+      # This is an optimized, non-debuggable test build. The temporary key is
+      # for local testing only and must not be reused as a production release key.
       - name: Create temporary performance-test keystore
         run: |
           mkdir -p app/keystore
@@ -74,7 +49,7 @@ jobs:
         run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
         env:
           METROLIST_APPLICATION_ID: com.prismtune.music.perf
-          METROLIST_APP_NAME: PrismTune Performance Test
+          METROLIST_APP_NAME: PrismTune
           STORE_PASSWORD: android
           KEY_ALIAS: prismtuneperf
           KEY_PASSWORD: android
@@ -83,9 +58,9 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Upload optimized PrismTune performance APK
+      - name: Upload optimized PrismTune APK
         uses: actions/upload-artifact@v7
         with:
-          name: PrismTune-optimized-test-apk
+          name: PrismTune-APK
           path: app/build/outputs/apk/foss/release/*.apk
           if-no-files-found: error
