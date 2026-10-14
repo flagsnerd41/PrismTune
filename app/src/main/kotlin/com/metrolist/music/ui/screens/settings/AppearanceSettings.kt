@@ -578,6 +578,8 @@ fun AppearanceSettings(
                     MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                     MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                     MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
+                    MiniPlayerBackgroundStyle.FAIRY_LIGHTS -> stringResource(R.string.fairy_lights_background)
+                    MiniPlayerBackgroundStyle.LEAVES -> stringResource(R.string.leaves_background)
                 }
             },
         )
@@ -1080,6 +1082,8 @@ fun AppearanceSettings(
                                                 MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                                                 MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                                                 MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
+                    MiniPlayerBackgroundStyle.FAIRY_LIGHTS -> stringResource(R.string.fairy_lights_background)
+                    MiniPlayerBackgroundStyle.LEAVES -> stringResource(R.string.leaves_background)
                                             }
                                         },
                                     color =
