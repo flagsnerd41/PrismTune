@@ -71,7 +71,7 @@ jobs:
           keytool -genkeypair -v -keystore app/keystore/release.keystore -storepass android -alias prismtuneperf -keypass android -dname "CN=PrismTune Performance Test,O=PrismTune,C=US" -keyalg RSA -keysize 2048 -validity 10000
 
       - name: Build optimized PrismTune performance APK
-        run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease -x lintVitalFossRelease
+        run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
         env:
           METROLIST_APPLICATION_ID: com.prismtune.music.perf
           METROLIST_APP_NAME: PrismTune Performance Test
