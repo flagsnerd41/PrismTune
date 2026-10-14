@@ -3,6 +3,9 @@ name: PrismTune APK (Manual Build)
 # Manual-only test build for the PrismTune feature branch.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - prism/liquid-glass-redesign
 
 permissions:
   contents: read
@@ -57,4 +60,32 @@ jobs:
         with:
           name: PrismTune-debug-apk
           path: app/build/outputs/apk/foss/debug/*.apk
+          if-no-files-found: error
+
+      # A temporary CI-only key signs this optimized test build. It is not a
+      # production signing key. Use a distinct application ID so both APKs
+      # can be installed side-by-side for a fair performance comparison.
+      - name: Create temporary performance-test keystore
+        run: |
+          mkdir -p app/keystore
+          keytool -genkeypair -v -keystore app/keystore/release.keystore -storepass android -alias prismtuneperf -keypass android -dname "CN=PrismTune Performance Test,O=PrismTune,C=US" -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Build optimized PrismTune performance APK
+        run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease -x lintVitalFossRelease
+        env:
+          METROLIST_APPLICATION_ID: com.prismtune.music.perf
+          METROLIST_APP_NAME: PrismTune Performance Test
+          STORE_PASSWORD: android
+          KEY_ALIAS: prismtuneperf
+          KEY_PASSWORD: android
+          PULL_REQUEST: "false"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
+
+      - name: Upload optimized PrismTune performance APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: PrismTune-optimized-test-apk
+          path: app/build/outputs/apk/foss/release/*.apk
           if-no-files-found: error
