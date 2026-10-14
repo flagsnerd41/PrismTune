@@ -520,8 +520,9 @@ private fun NewMiniPlayer(
 }
 
 /**
- * Animated decorations for the expanded Now Playing player. Fairy lights sway and flicker;
- * leaves drift across the player and a few settle along its edges.
+ * Atmospheric, hand-drawn decorations for the expanded Now Playing player.
+ * Fairy bulbs have sockets, glass highlights and layered light bloom; leaves have
+ * a tapered silhouette, midrib and side veins instead of flat ovals.
  */
 @Composable
 internal fun PlayerAtmosphere(
@@ -538,59 +539,172 @@ internal fun PlayerAtmosphere(
             songChangePulse = false
         }
     }
-    val motion = rememberInfiniteTransition(label = "miniPlayerAtmosphere")
-    val wind by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(6_500, easing = LinearEasing), RepeatMode.Restart), label = "wind")
-    val shimmer by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(820, easing = LinearEasing), RepeatMode.Restart), label = "lightFlicker")
+    val motion = rememberInfiniteTransition(label = "prismAtmosphere")
+    val wind by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(8_000, easing = LinearEasing), RepeatMode.Restart),
+        label = "slowBreeze",
+    )
+    val shimmer by motion.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1_700, easing = LinearEasing), RepeatMode.Restart),
+        label = "fairyLightTwinkle",
+    )
 
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
+        val breeze = kotlin.math.sin(wind * Math.PI * 2.0).toFloat()
+        val px = density
+        val warmGold = Color(0xFFFFD99A)
+        val warmAmber = Color(0xFFFFB85C)
+
         if (style == MiniPlayerBackgroundStyle.FAIRY_LIGHTS) {
-            val sway = kotlin.math.sin(wind * (Math.PI * 2.0)).toFloat()
-            val rope = Path().apply {
-                moveTo(-w * 0.03f, h * (0.18f + sway * 0.018f))
-                cubicTo(w * 0.22f, h * (0.34f + sway * 0.02f), w * 0.55f, h * (0.04f - sway * 0.018f), w * 1.04f, h * (0.20f - sway * 0.012f))
+            // A softly illuminated top edge keeps the effect atmospheric, not a flat drawing.
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFFFFC46B).copy(alpha = 0.12f), Color.Transparent),
+                    startY = 0f,
+                    endY = h * 0.48f,
+                ),
+                size = size,
+            )
+
+            // Fine twisted cord, with a separate highlight to give it depth.
+            val cord = Path().apply {
+                moveTo(-w * 0.04f, h * (0.115f + breeze * 0.012f))
+                cubicTo(
+                    w * 0.18f, h * (0.235f + breeze * 0.018f),
+                    w * 0.39f, h * (0.045f - breeze * 0.014f),
+                    w * 0.58f, h * (0.135f + breeze * 0.012f),
+                )
+                cubicTo(
+                    w * 0.75f, h * (0.225f - breeze * 0.012f),
+                    w * 0.91f, h * (0.055f + breeze * 0.014f),
+                    w * 1.04f, h * (0.13f - breeze * 0.01f),
+                )
             }
-            drawPath(rope, Color(0xFF17130F).copy(alpha = 0.95f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx()))
-            drawPath(rope, Color.White.copy(alpha = 0.16f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.55.dp.toPx()))
-            for (i in 0 until 8) {
-                val t = i / 7f
-                val curveY = 0.18f + 0.10f * kotlin.math.sin(t * Math.PI).toFloat() - 0.09f * t +
-                    sway * 0.018f * kotlin.math.cos(t * Math.PI * 2).toFloat()
-                val x = w * (0.04f + t * 0.92f)
-                val y = h * curveY
-                val individual = (kotlin.math.sin(shimmer * Math.PI * 2 + i * 1.7f) * 0.5f + 0.5f).toFloat()
-                val flicker = if (songChangePulse) 0.18f + individual * 0.82f else 0.70f + individual * 0.30f
-                val bulbColor = if (songChangePulse) androidx.compose.ui.graphics.lerp(Color(0xFFFFD58A), themeColor, individual * 0.8f) else themeColor
-                drawCircle(bulbColor.copy(alpha = 0.09f * flicker), 12.dp.toPx(), Offset(x, y))
-                drawCircle(bulbColor.copy(alpha = 0.18f * flicker), 7.dp.toPx(), Offset(x, y))
-                drawCircle(bulbColor.copy(alpha = 0.34f * flicker), 4.2.dp.toPx(), Offset(x, y))
-                drawCircle(bulbColor.copy(alpha = flicker), 2.3.dp.toPx(), Offset(x, y))
-                drawCircle(Color.White.copy(alpha = 0.72f * flicker), 0.85.dp.toPx(), Offset(x - 0.7.dp.toPx(), y - 0.7.dp.toPx()))
+            drawPath(cord, Color(0xFF16110D).copy(alpha = 0.95f), style = Stroke(width = 2.2f * px, cap = StrokeCap.Round))
+            drawPath(cord, Color(0xFFB18A55).copy(alpha = 0.78f), style = Stroke(width = 0.7f * px, cap = StrokeCap.Round))
+
+            // Individual sockets and dangling stems follow the cord's gentle wave.
+            val bulbCount = 9
+            for (i in 0 until bulbCount) {
+                val t = i / (bulbCount - 1f)
+                val x = w * (0.035f + t * 0.93f)
+                val cordY = h * (
+                    0.115f + 0.095f * kotlin.math.sin(t * Math.PI * 2.0).toFloat() +
+                        breeze * 0.012f * kotlin.math.cos(t * Math.PI * 2.0).toFloat()
+                )
+                val stemLength = (10f + (i % 3) * 3f) * px
+                val sway = breeze * (2.4f + i % 3) * px
+                val bulbX = x + sway
+                val bulbY = cordY + stemLength + 8f * px
+                val twinkle = (kotlin.math.sin(shimmer * Math.PI * 2.0 + i * 1.63) * 0.5 + 0.5).toFloat()
+                val pulse = if (songChangePulse) {
+                    0.35f + 0.65f * ((kotlin.math.sin(shimmer * Math.PI * 8.0 + i) * 0.5 + 0.5).toFloat())
+                } else {
+                    0.72f + 0.28f * twinkle
+                }
+                val bulbTint = if (songChangePulse) androidx.compose.ui.graphics.lerp(warmGold, themeColor, twinkle * 0.82f) else warmGold
+
+                drawLine(Color(0xFF32251A), Offset(x, cordY), Offset(bulbX, bulbY - 3f * px), strokeWidth = 1.15f * px, cap = StrokeCap.Round)
+                drawRoundRect(
+                    color = Color(0xFF59432A),
+                    topLeft = Offset(bulbX - 3.2f * px, bulbY - 5.8f * px),
+                    size = Size(6.4f * px, 5f * px),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1.5f * px),
+                )
+                // Broad bloom, inner glow, shaded glass and a tiny specular glint.
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(bulbTint.copy(alpha = 0.32f * pulse), bulbTint.copy(alpha = 0.10f * pulse), Color.Transparent),
+                        center = Offset(bulbX, bulbY),
+                        radius = 31f * px,
+                    ),
+                    radius = 31f * px,
+                    center = Offset(bulbX, bulbY),
+                )
+                drawCircle(bulbTint.copy(alpha = 0.19f * pulse), 8.5f * px, Offset(bulbX, bulbY))
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFFFFF8D8), bulbTint, warmAmber.copy(alpha = 0.96f)),
+                        center = Offset(bulbX - 2f * px, bulbY - 2f * px),
+                        radius = 8f * px,
+                    ),
+                    radius = 5.4f * px,
+                    center = Offset(bulbX, bulbY),
+                )
+                drawCircle(Color.White.copy(alpha = 0.92f * pulse), 1.45f * px, Offset(bulbX - 1.7f * px, bulbY - 2.1f * px))
+                drawCircle(Color(0xFFFFF0C2).copy(alpha = 0.42f * pulse), 2.1f * px, Offset(bulbX + 1.5f * px, bulbY + 1.5f * px))
             }
         } else if (style == MiniPlayerBackgroundStyle.LEAVES) {
-            for (i in 0 until 7) {
-                val progress = (wind * (0.20f + i * 0.025f) + i * 0.157f) % 1f
+            // Low-contrast forest-green haze gives the drifting leaves somewhere to live.
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF35563A).copy(alpha = 0.18f), Color.Transparent),
+                    center = Offset(w * 0.52f, h * 0.50f),
+                    radius = maxOf(w, h) * 0.76f,
+                ),
+                size = size,
+            )
+
+            val greens = listOf(Color(0xFF789C54), Color(0xFF426D3F), Color(0xFFB4C987), Color(0xFF5E8748), Color(0xFF9AAE63))
+            // Draw a natural leaf silhouette with a tapered tip and curved sides.
+            fun drawLeaf(cx: Float, cy: Float, leafW: Float, leafH: Float, angle: Float, color: Color, alpha: Float) {
+                rotate(angle, pivot = Offset(cx, cy)) {
+                    val leaf = Path().apply {
+                        moveTo(cx, cy - leafH * 0.58f)
+                        cubicTo(cx + leafW * 0.48f, cy - leafH * 0.34f, cx + leafW * 0.55f, cy + leafH * 0.18f, cx, cy + leafH * 0.55f)
+                        cubicTo(cx - leafW * 0.48f, cy + leafH * 0.20f, cx - leafW * 0.52f, cy - leafH * 0.28f, cx, cy - leafH * 0.58f)
+                        close()
+                    }
+                    drawPath(
+                        leaf,
+                        brush = Brush.linearGradient(
+                            colors = listOf(color.copy(alpha = alpha), color.copy(alpha = alpha * 0.78f), Color(0xFF243D27).copy(alpha = alpha * 0.72f)),
+                            start = Offset(cx - leafW * 0.4f, cy - leafH * 0.4f),
+                            end = Offset(cx + leafW * 0.4f, cy + leafH * 0.5f),
+                        ),
+                    )
+                    // Central vein and fine diagonal veins make each leaf read as a real leaf.
+                    drawLine(Color(0xFFE4EBC5).copy(alpha = alpha * 0.84f), Offset(cx, cy - leafH * 0.46f), Offset(cx, cy + leafH * 0.43f), strokeWidth = 0.9f * px, cap = StrokeCap.Round)
+                    for (vein in 0..2) {
+                        val yy = cy - leafH * 0.18f + vein * leafH * 0.18f
+                        val side = if (vein % 2 == 0) 1f else -1f
+                        drawLine(
+                            Color(0xFFD9E6B8).copy(alpha = alpha * 0.48f),
+                            Offset(cx, yy),
+                            Offset(cx + side * leafW * 0.29f, yy - leafH * 0.10f),
+                            strokeWidth = 0.55f * px,
+                            cap = StrokeCap.Round,
+                        )
+                    }
+                    drawPath(leaf, color.copy(alpha = alpha * 0.18f), style = Stroke(width = 0.65f * px))
+                }
+            }
+
+            // Larger foreground leaves travel diagonally and tumble gently in the breeze.
+            for (i in 0 until 8) {
+                val speed = 0.16f + (i % 4) * 0.035f
+                val progress = (wind * speed + i * 0.137f) % 1f
                 val x = w * progress
-                val y = h * (0.18f + ((i % 4) * 0.14f) + kotlin.math.sin((wind * 2.0 + i * 1.3) * Math.PI).toFloat() * 0.08f)
-                val leafWidth = (7 + (i % 3) * 2).dp.toPx()
-                val leafHeight = leafWidth * 1.75f
-                val angle = kotlin.math.sin((wind + i * 0.19f) * Math.PI * 2).toFloat() * 35f + 28f
-                val leafColor = listOf(Color(0xFF8EBB72), Color(0xFF537B45), Color(0xFFB1C98B))[i % 3]
-                rotate(angle, pivot = Offset(x, y)) {
-                    drawOval(leafColor.copy(alpha = 0.92f), Offset(x - leafWidth / 2, y - leafHeight / 2), Size(leafWidth, leafHeight))
-                    drawLine(Color(0xFFD9E7B9).copy(alpha = 0.8f), Offset(x, y - leafHeight * 0.36f), Offset(x, y + leafHeight * 0.38f), strokeWidth = 0.7.dp.toPx())
-                }
+                val verticalWave = kotlin.math.sin((wind * 2.0 + i * 0.91) * Math.PI).toFloat()
+                val y = h * (0.20f + (i % 5) * 0.135f + verticalWave * 0.065f)
+                val leafH = (30f + (i % 4) * 8f) * px
+                val leafW = leafH * (0.43f + (i % 3) * 0.04f)
+                val rotation = kotlin.math.sin((wind * 1.6 + i * 0.7) * Math.PI * 2.0).toFloat() * 48f + 22f
+                drawLeaf(x, y, leafW, leafH, rotation, greens[i % greens.size], 0.90f)
             }
-            for (i in 0 until 3) {
-                val x = w * (0.17f + i * 0.34f)
-                val y = if (i == 1) h * 0.91f else h * 0.10f
-                val leafWidth = 8.dp.toPx()
-                rotate(if (i == 1) 66f else -35f + i * 20f, pivot = Offset(x, y)) {
-                    drawOval(Color(0xFF769B58), Offset(x - leafWidth / 2, y - leafWidth), Size(leafWidth, leafWidth * 2f))
-                    drawLine(Color(0xFFD9E7B9).copy(alpha = 0.85f), Offset(x, y - leafWidth * 0.8f), Offset(x, y + leafWidth * 0.8f), strokeWidth = 0.7.dp.toPx())
-                }
-            }
+
+            // These leaves are intentionally stationary: they have settled on the player's edges.
+            drawLeaf(w * 0.075f, h * 0.13f, 18f * px, 39f * px, -42f + breeze * 3f, greens[2], 0.94f)
+            drawLeaf(w * 0.91f, h * 0.20f, 16f * px, 35f * px, 48f + breeze * 2f, greens[0], 0.88f)
+            drawLeaf(w * 0.13f, h * 0.83f, 17f * px, 37f * px, 53f + breeze * 2f, greens[3], 0.90f)
+            drawLeaf(w * 0.84f, h * 0.91f, 19f * px, 41f * px, -46f + breeze * 3f, greens[1], 0.92f)
+            drawLeaf(w * 0.51f, h * 0.96f, 14f * px, 30f * px, 72f + breeze * 2f, greens[4], 0.78f)
         }
     }
 }
