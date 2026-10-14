@@ -1030,7 +1030,7 @@ fun AppearanceSettings(
             )
 
         Material3SettingsGroup(
-            title = stringResource(id = R.string.mini_player),
+            title = stringResource(id = R.string.prism_exclusives),
             items =
                 buildList {
                     add(
@@ -1097,6 +1097,22 @@ fun AppearanceSettings(
                             onClick = { if (useNewMiniPlayerDesign) showMiniPlayerBackgroundDialog = true },
                         ),
                     )
+                    add(
+                        Material3SettingsItem(
+                            icon = painterResource(R.drawable.gradient),
+                            title = { Text(stringResource(R.string.player_background_style)) },
+                            description = {
+                                Text(
+                                    when (playerBackground) {
+                                        PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                        PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                        PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                                    },
+                                )
+                            },
+                            onClick = { showPlayerBackgroundDialog = true },
+                        ),
+                    )
                 },
         )
 
@@ -1128,20 +1144,6 @@ fun AppearanceSettings(
                             )
                         },
                         onClick = { onUseNewPlayerDesignChange(!useNewPlayerDesign) },
-                    ),
-                    Material3SettingsItem(
-                        icon = painterResource(R.drawable.gradient),
-                        title = { Text(stringResource(R.string.player_background_style)) },
-                        description = {
-                            Text(
-                                when (playerBackground) {
-                                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                                },
-                            )
-                        },
-                        onClick = { showPlayerBackgroundDialog = true },
                     ),
                     Material3SettingsItem(
                         icon = painterResource(R.drawable.hide_image),
