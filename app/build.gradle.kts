@@ -7,19 +7,36 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
+// applicationId can differ from the source package/namespace.
+// Keep namespace = com.metrolist.music so R + BuildConfig resolve until full package rename.
 val baseApplicationId = "com.prismtune.music"
-val applicationIdOverride = System.getenv("PRISMTUNE_APPLICATION_ID")?.takeIf { it.isNotBlank() }
-val appNameOverride = System.getenv("PRISMTUNE_APP_NAME")?.takeIf { it.isNotBlank() }
+val applicationIdOverride =
+    System.getenv("PRISMTUNE_APPLICATION_ID")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_APPLICATION_ID")?.takeIf { it.isNotBlank() }
+val appNameOverride =
+    System.getenv("PRISMTUNE_APP_NAME")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_APP_NAME")?.takeIf { it.isNotBlank() }
 val buildCommit =
-    System.getenv("PRISMTUNE_BUILD_COMMIT")
+    (System.getenv("PRISMTUNE_BUILD_COMMIT") ?: System.getenv("METROLIST_BUILD_COMMIT"))
         ?.trim()
         ?.takeIf { it.matches(Regex("[0-9a-fA-F]{7,40}")) }
         ?.take(7)
         ?.lowercase()
-val debugKeystorePathOverride = System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
-val debugKeystorePassword = System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
-val debugKeyAlias = System.getenv("PRISMTUNE_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "androiddebugkey"
-val debugKeyPassword = System.getenv("PRISMTUNE_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
+val debugKeystorePathOverride =
+    System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+val debugKeystorePassword =
+    System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: "android"
+val debugKeyAlias =
+    System.getenv("PRISMTUNE_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+        ?: "androiddebugkey"
+val debugKeyPassword =
+    System.getenv("PRISMTUNE_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() }
+        ?: "android"
 val persistentDebugKeystoreFile = file("persistent-debug.keystore")
 val workflowDebugKeystoreFile = debugKeystorePathOverride?.let(::file)
 
@@ -33,7 +50,8 @@ plugins {
 }
 
 android {
-    namespace = "com.prismtune.music"
+    // MUST match the existing Kotlin package until full rename is done
+    namespace = "com.metrolist.music"
     compileSdk = 37
 
     defaultConfig {
@@ -54,7 +72,6 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
         }
 
-        // LastFM API keys from GitHub Secrets
         val lastFmKey = localProperties.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
         val lastFmSecret = localProperties.getProperty("LASTFM_SECRET") ?: System.getenv("LASTFM_SECRET") ?: ""
 
@@ -66,22 +83,17 @@ android {
 
     flavorDimensions += listOf("variant")
     productFlavors {
-        // FOSS - Updater, but no gcast
         create("foss") {
             dimension = "variant"
             isDefault = true
             buildConfigField("Boolean", "CAST_AVAILABLE", "false")
             buildConfigField("Boolean", "UPDATER_AVAILABLE", "true")
         }
-
-        // GMS - Updater and gcast
         create("gms") {
             dimension = "variant"
             buildConfigField("Boolean", "CAST_AVAILABLE", "true")
             buildConfigField("Boolean", "UPDATER_AVAILABLE", "true")
         }
-
-        // IzzyOnDroid - no gcast, no updater - the ONLY F-droid compliant build
         create("izzy") {
             dimension = "variant"
             buildConfigField("Boolean", "CAST_AVAILABLE", "false")
