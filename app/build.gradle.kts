@@ -7,19 +7,19 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
-val baseApplicationId = "com.metrolist.music"
-val applicationIdOverride = System.getenv("METROLIST_APPLICATION_ID")?.takeIf { it.isNotBlank() }
-val appNameOverride = System.getenv("METROLIST_APP_NAME")?.takeIf { it.isNotBlank() }
+val baseApplicationId = "com.prismtune.music"
+val applicationIdOverride = System.getenv("PRISMTUNE_APPLICATION_ID")?.takeIf { it.isNotBlank() }
+val appNameOverride = System.getenv("PRISMTUNE_APP_NAME")?.takeIf { it.isNotBlank() }
 val buildCommit =
-    System.getenv("METROLIST_BUILD_COMMIT")
+    System.getenv("PRISMTUNE_BUILD_COMMIT")
         ?.trim()
         ?.takeIf { it.matches(Regex("[0-9a-fA-F]{7,40}")) }
         ?.take(7)
         ?.lowercase()
-val debugKeystorePathOverride = System.getenv("METROLIST_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
-val debugKeystorePassword = System.getenv("METROLIST_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
-val debugKeyAlias = System.getenv("METROLIST_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "androiddebugkey"
-val debugKeyPassword = System.getenv("METROLIST_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
+val debugKeystorePathOverride = System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+val debugKeystorePassword = System.getenv("PRISMTUNE_DEBUG_KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
+val debugKeyAlias = System.getenv("PRISMTUNE_DEBUG_KEY_ALIAS")?.takeIf { it.isNotBlank() } ?: "androiddebugkey"
+val debugKeyPassword = System.getenv("PRISMTUNE_DEBUG_KEY_PASSWORD")?.takeIf { it.isNotBlank() } ?: "android"
 val persistentDebugKeystoreFile = file("persistent-debug.keystore")
 val workflowDebugKeystoreFile = debugKeystorePathOverride?.let(::file)
 
@@ -33,7 +33,7 @@ plugins {
 }
 
 android {
-    namespace = "com.metrolist.music"
+    namespace = "com.prismtune.music"
     compileSdk = 37
 
     defaultConfig {
@@ -45,7 +45,7 @@ android {
         val baseVersionName = requireNotNull(versionName)
         buildConfigField("String", "BASE_VERSION_NAME", "\"$baseVersionName\"")
         buildCommit?.let { versionName = "$baseVersionName+$it" }
-        resValue("string", "app_name", appNameOverride ?: "Metrolist")
+        resValue("string", "app_name", appNameOverride ?: "PrismTune")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -133,7 +133,7 @@ android {
             }
             isDebuggable = true
             if (appNameOverride == null) {
-                resValue("string", "app_name", "Metrolist Debug")
+                resValue("string", "app_name", "PrismTune Debug")
             }
             signingConfig =
                 if (workflowDebugKeystoreFile != null) {
@@ -175,9 +175,6 @@ android {
         warningsAsErrors = false
         abortOnError = false
         checkDependencies = false
-        // Lint never gated anything here (abortOnError = false), so the
-        // lintVital pass that assembleRelease implicitly triggers was pure
-        // build time. Run lint on demand with ./gradlew :app:lintGmsRelease.
         checkReleaseBuilds = false
     }
 
@@ -240,12 +237,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     }
 }
 
-// Android provides org.json as a platform API (/apex/com.android.art/javalib/core-libart.jar).
-// The standalone org.json:json artefact bundles an older Apache Harmony copy of JSONArray that
-// contains an internal `myArrayList` field absent from the platform class.  Without obfuscation
-// R8 inlines against this internal field; at runtime the platform class is resolved instead,
-// producing a NoSuchFieldError.  Excluding the artefact globally ensures only the platform
-// class is ever referenced.
 configurations.configureEach {
     exclude(group = "org.json", module = "json")
 }
@@ -286,7 +277,6 @@ dependencies {
     implementation(libs.media3.session)
     implementation(libs.media3.okhttp)
 
-    // Google Cast - only included in GMS flavor (not available in F-Droid/FOSS builds)
     "gmsImplementation"(libs.media3.cast)
     "gmsImplementation"(libs.mediarouter)
     "gmsImplementation"(libs.cast.framework)
@@ -307,7 +297,6 @@ dependencies {
     implementation(libs.ktor.client.encoding)
     implementation(libs.ktor.serialization.json)
 
-    // Protobuf for message serialization (lite version for Android)
     implementation(libs.protobuf.javalite)
     implementation(libs.protobuf.kotlin.lite)
 
