@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material3.Icon
@@ -26,7 +27,12 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import coil3.compose.AsyncImage
+import com.metrolist.music.LocalPlayerConnection
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -152,6 +158,8 @@ fun AppNavigationBar(
         if (pureBlack) Color.Black.copy(alpha = 0.94f)
         else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.88f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    // Reuse the current track artwork as a lightweight backdrop for the floating glass bar.
+    val currentArtworkUrl = LocalPlayerConnection.current?.mediaMetadata?.collectAsState()?.value?.thumbnailUrl
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
@@ -162,7 +170,7 @@ fun AppNavigationBar(
     ) {
         Surface(
             shape = RoundedCornerShape(28.dp),
-            color = containerColor,
+            color = Color.Transparent,
             tonalElevation = 3.dp,
             shadowElevation = 8.dp,
             modifier = Modifier
@@ -174,10 +182,26 @@ fun AppNavigationBar(
                     shape = RoundedCornerShape(28.dp),
                 ),
         ) {
-            NavigationBar(
-                containerColor = Color.Transparent,
-                contentColor = contentColor,
-            ) {
+            Box(modifier = Modifier.clip(RoundedCornerShape(28.dp))) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S && currentArtworkUrl != null) {
+                    AsyncImage(
+                        model = currentArtworkUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .matchParentSize()
+                            .blur(32.dp),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(containerColor),
+                )
+                NavigationBar(
+                    containerColor = Color.Transparent,
+                    contentColor = contentColor,
+                ) {
                 navigationItems.forEach { screen ->
                     val isSelected = remember(currentRoute, screen.route) {
                         isRouteSelected(currentRoute, screen.route, navigationItems)
