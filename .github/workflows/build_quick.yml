@@ -44,16 +44,57 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Prepare APK for upload
+      - name: Generate debug keystore and sign APK
         run: |
           OUTPUT_DIR="app/build/outputs/apk/foss/release"
           mkdir -p "$OUTPUT_DIR/out"
-          # Prefer any already-signed APK, otherwise take the unsigned one
-          if ls "$OUTPUT_DIR"/*-signed.apk 1>/dev/null 2>&1; then
-            find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | head -1 | xargs -I{} cp {} "$OUTPUT_DIR/out/PrismTune-test.apk"
+
+          # Create a temporary debug keystore
+          keytool -genkeypair -v \
+            -keystore debug-test.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=PrismTune Test,O=PrismTune,C=US"
+
+          # Find the unsigned APK
+          UNSIGNED=$(find "$OUTPUT_DIR" -name "*.apk" ! -name "*-signed.apk" | head -1)
+          echo "Unsigned APK: $UNSIGNED"
+
+          # Align + sign with apksigner (from Android build-tools via sdkmanager if needed)
+          # Use jarsigner as fallback if apksigner not available
+          if command -v apksigner >/dev/null 2>&1; then
+            apksigner sign \
+              --ks debug-test.keystore \
+              --ks-pass pass:android \
+              --key-pass pass:android \
+              --out "$OUTPUT_DIR/out/PrismTune-test.apk" \
+              "$UNSIGNED"
           else
-            find "$OUTPUT_DIR" -name "*.apk" | head -1 | xargs -I{} cp {} "$OUTPUT_DIR/out/PrismTune-test-unsigned.apk"
+            # Install Android cmdline tools for apksigner if missing
+            yes | sdkmanager --licenses >/dev/null 2>&1 || true
+            BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* 2>/dev/null | sort -V | tail -1)
+            if [ -n "$BUILD_TOOLS" ] && [ -x "$BUILD_TOOLS/apksigner" ]; then
+              "$BUILD_TOOLS/apksigner" sign \
+                --ks debug-test.keystore \
+                --ks-pass pass:android \
+                --key-pass pass:android \
+                --out "$OUTPUT_DIR/out/PrismTune-test.apk" \
+                "$UNSIGNED"
+            else
+              # jarsigner fallback
+              cp "$UNSIGNED" "$OUTPUT_DIR/out/PrismTune-test-unsigned.apk"
+              jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+                -keystore debug-test.keystore \
+                -storepass android -keypass android \
+                "$OUTPUT_DIR/out/PrismTune-test-unsigned.apk" androiddebugkey
+              mv "$OUTPUT_DIR/out/PrismTune-test-unsigned.apk" "$OUTPUT_DIR/out/PrismTune-test.apk"
+            fi
           fi
+
           ls -la "$OUTPUT_DIR/out"
 
       - name: Upload APK
