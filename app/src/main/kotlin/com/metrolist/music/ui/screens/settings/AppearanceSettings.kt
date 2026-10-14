@@ -1030,7 +1030,7 @@ fun AppearanceSettings(
             )
 
         Material3SettingsGroup(
-            title = stringResource(id = R.string.prism_exclusives),
+            title = stringResource(id = R.string.mini_player),
             items =
                 buildList {
                     add(

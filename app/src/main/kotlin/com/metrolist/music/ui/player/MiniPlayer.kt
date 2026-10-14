@@ -515,26 +515,16 @@ private fun NewMiniPlayer(
                 )
                 }
             }
-            if (miniPlayerBackground == MiniPlayerBackgroundStyle.FAIRY_LIGHTS ||
-                miniPlayerBackground == MiniPlayerBackgroundStyle.LEAVES
-            ) {
-                MiniPlayerAtmosphere(
-                    style = miniPlayerBackground,
-                    trackKey = mediaMetadata?.id,
-                    themeColor = songThemeColor,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
         }
     }
 }
 
 /**
- * Animated decorations for the cozy mini-player styles. Fairy lights use a curved,
- * swaying wire and glowing dimensional bulbs; leaves drift over the player and rest on its edges.
+ * Animated decorations for the expanded Now Playing player. Fairy lights sway and flicker;
+ * leaves drift across the player and a few settle along its edges.
  */
 @Composable
-private fun MiniPlayerAtmosphere(
+internal fun PlayerAtmosphere(
     style: MiniPlayerBackgroundStyle,
     trackKey: String?,
     themeColor: Color,

@@ -38,6 +38,9 @@ import com.metrolist.music.ui.component.Material3SettingsItem
 import com.metrolist.music.ui.component.ReleaseNotesCard
 import com.metrolist.music.ui.utils.backToMain
 import com.metrolist.music.utils.Updater
+import com.metrolist.music.constants.MiniPlayerBackgroundStyle
+import com.metrolist.music.constants.MiniPlayerBackgroundStyleKey
+import com.metrolist.music.utils.rememberEnumPreference
 import androidx.compose.runtime.remember
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +52,11 @@ fun SettingsScreen(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val isAndroid12OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val (atmosphereStyle, onAtmosphereStyleChange) = rememberEnumPreference(
+        MiniPlayerBackgroundStyleKey,
+        defaultValue = MiniPlayerBackgroundStyle.DEFAULT,
+    )
+
     val hasAndroidAuto = remember {
         try {
             context.packageManager.getPackageInfo(
@@ -107,6 +115,39 @@ fun SettingsScreen(
                     title = { Text(stringResource(R.string.ai_lyrics_translation)) },
                     onClick = { navController.navigate("settings/ai") }
                 )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Prism Exclusives — effects for the expanded Now Playing player
+        Material3SettingsGroup(
+            title = stringResource(R.string.prism_exclusives),
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.gradient),
+                    title = { Text(stringResource(R.string.fairy_lights_background)) },
+                    description = { Text("Warm, swaying lights that react to the current song") },
+                    trailingContent = {
+                        Switch(
+                            checked = atmosphereStyle == MiniPlayerBackgroundStyle.FAIRY_LIGHTS,
+                            onCheckedChange = { enabled -> onAtmosphereStyleChange(if (enabled) MiniPlayerBackgroundStyle.FAIRY_LIGHTS else MiniPlayerBackgroundStyle.DEFAULT) },
+                        )
+                    },
+                    onClick = { onAtmosphereStyleChange(if (atmosphereStyle == MiniPlayerBackgroundStyle.FAIRY_LIGHTS) MiniPlayerBackgroundStyle.DEFAULT else MiniPlayerBackgroundStyle.FAIRY_LIGHTS) },
+                ),
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text(stringResource(R.string.leaves_background)) },
+                    description = { Text("Drifting leaves with a few resting on the player") },
+                    trailingContent = {
+                        Switch(
+                            checked = atmosphereStyle == MiniPlayerBackgroundStyle.LEAVES,
+                            onCheckedChange = { enabled -> onAtmosphereStyleChange(if (enabled) MiniPlayerBackgroundStyle.LEAVES else MiniPlayerBackgroundStyle.DEFAULT) },
+                        )
+                    },
+                    onClick = { onAtmosphereStyleChange(if (atmosphereStyle == MiniPlayerBackgroundStyle.LEAVES) MiniPlayerBackgroundStyle.DEFAULT else MiniPlayerBackgroundStyle.LEAVES) },
+                ),
             )
         )
 

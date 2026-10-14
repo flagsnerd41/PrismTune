@@ -145,6 +145,8 @@ import com.metrolist.music.constants.HidePlayerThumbnailKey
 import com.metrolist.music.constants.HideStatusBarOnFullscreenKey
 import com.metrolist.music.constants.KeepScreenOn
 import com.metrolist.music.constants.PlayerBackgroundStyle
+import com.metrolist.music.constants.MiniPlayerBackgroundStyle
+import com.metrolist.music.constants.MiniPlayerBackgroundStyleKey
 import com.metrolist.music.constants.PlayerBackgroundStyleKey
 import com.metrolist.music.constants.PlayerButtonsStyle
 import com.metrolist.music.constants.PlayerButtonsStyleKey
@@ -237,6 +239,10 @@ fun BottomSheetPlayer(
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.BLUR,
+    )
+    val atmosphereStyle by rememberEnumPreference(
+        MiniPlayerBackgroundStyleKey,
+        MiniPlayerBackgroundStyle.DEFAULT,
     )
     val playerButtonsStyle by rememberEnumPreference(
         key = PlayerButtonsStyleKey,
@@ -914,6 +920,16 @@ fun BottomSheetPlayer(
                     else -> {
                         PlayerBackgroundStyle.DEFAULT
                     }
+                }
+                if (atmosphereStyle == MiniPlayerBackgroundStyle.FAIRY_LIGHTS ||
+                    atmosphereStyle == MiniPlayerBackgroundStyle.LEAVES
+                ) {
+                    PlayerAtmosphere(
+                        style = atmosphereStyle,
+                        trackKey = mediaMetadata?.id,
+                        themeColor = gradientColors.firstOrNull() ?: MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
         },
