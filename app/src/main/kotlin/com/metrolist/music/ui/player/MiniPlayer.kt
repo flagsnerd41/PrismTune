@@ -571,7 +571,7 @@ private fun MiniPlayerAtmosphere(
                 val y = h * curveY
                 val individual = (kotlin.math.sin(shimmer * Math.PI * 2 + i * 1.7f) * 0.5f + 0.5f).toFloat()
                 val flicker = if (songChangePulse) 0.18f + individual * 0.82f else 0.70f + individual * 0.30f
-                val bulbColor = if (songChangePulse) Color.lerp(Color(0xFFFFD58A), themeColor, individual * 0.8f) else themeColor
+                val bulbColor = if (songChangePulse) androidx.compose.ui.graphics.lerp(Color(0xFFFFD58A), themeColor, individual * 0.8f) else themeColor
                 drawCircle(bulbColor.copy(alpha = 0.09f * flicker), 12.dp.toPx(), Offset(x, y))
                 drawCircle(bulbColor.copy(alpha = 0.18f * flicker), 7.dp.toPx(), Offset(x, y))
                 drawCircle(bulbColor.copy(alpha = 0.34f * flicker), 4.2.dp.toPx(), Offset(x, y))
