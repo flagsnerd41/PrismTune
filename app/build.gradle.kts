@@ -122,6 +122,16 @@ android {
             isShrinkResources = true
             isCrunchPngs = false
             isDebuggable = false
+            // Only attach the CI/test signing config when its keystore and credentials exist.
+            // This keeps local release builds configurable while ensuring CI APKs are installable.
+            if (
+                file("keystore/release.keystore").exists() &&
+                !System.getenv("STORE_PASSWORD").isNullOrBlank() &&
+                !System.getenv("KEY_ALIAS").isNullOrBlank() &&
+                !System.getenv("KEY_PASSWORD").isNullOrBlank()
+            ) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
