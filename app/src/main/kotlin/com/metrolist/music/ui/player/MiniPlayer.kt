@@ -113,6 +113,15 @@ import com.metrolist.music.constants.MiniPlayerBackgroundStyle
 import com.metrolist.music.constants.MiniPlayerBackgroundStyleKey
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
 import coil3.imageLoader
@@ -246,9 +255,13 @@ private fun NewMiniPlayer(
             (600 / (1f + kotlin.math.exp(-(-11.44748 * swipeSensitivity + 9.04945)))).roundToInt()
         }
 
+    var songThemeColor by remember { mutableStateOf(Color(0xFFFFC66D)) }
+
     LaunchedEffect(mediaMetadata?.id, miniPlayerBackground) {
         gradientColors = emptyList()
-        if (miniPlayerBackground == MiniPlayerBackgroundStyle.GRADIENT) {
+        if (miniPlayerBackground == MiniPlayerBackgroundStyle.GRADIENT ||
+            miniPlayerBackground == MiniPlayerBackgroundStyle.FAIRY_LIGHTS
+        ) {
             val url = mediaMetadata?.thumbnailUrl
             if (url != null) {
                 withContext(Dispatchers.IO) {
@@ -261,24 +274,29 @@ private fun NewMiniPlayer(
                     val bitmap = result?.image?.toBitmap()
                     if (bitmap != null) {
                         val palette = withContext(Dispatchers.Default) {
-                            Palette.from(bitmap)
-                                .maximumColorCount(8)
-                                .resizeBitmapArea(100 * 100)
-                                .generate()
+                            Palette.from(bitmap).maximumColorCount(8).resizeBitmapArea(100 * 100).generate()
                         }
                         val extracted = PlayerColorExtractor.extractGradientColors(
                             palette = palette,
                             fallbackColor = 0xFF000000.toInt(),
                         )
+                        val themeRgb = palette.vibrantSwatch?.rgb
+                            ?: palette.lightVibrantSwatch?.rgb
+                            ?: palette.dominantSwatch?.rgb
+                            ?: 0xFFFFC66D.toInt()
                         withContext(Dispatchers.Main) {
                             gradientColors = extracted
+                            songThemeColor = Color(themeRgb)
                         }
                     } else {
                         withContext(Dispatchers.Main) {
                             gradientColors = emptyList()
+                            songThemeColor = Color(0xFFFFC66D)
                         }
                     }
                 }
+            } else {
+                songThemeColor = Color(0xFFFFC66D)
             }
         } else {
             gradientColors = emptyList()
@@ -413,26 +431,10 @@ private fun NewMiniPlayer(
                     }
                 }
                 MiniPlayerBackgroundStyle.FAIRY_LIGHTS -> {
-                    AsyncImage(
-                        model = "https://images.unsplash.com/photo-1546109615-00119b061112?auto=format&fit=crop&w=1200&q=80",
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().blur(4.dp),
-                    )
-                    Box(
-                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)),
-                    )
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.18f)))
                 }
                 MiniPlayerBackgroundStyle.LEAVES -> {
-                    AsyncImage(
-                        model = "https://images.unsplash.com/photo-1620007922564-9b6b3759f213?auto=format&fit=crop&w=1200&q=80",
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().blur(3.dp),
-                    )
-                    Box(
-                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)),
-                    )
+                    Box(Modifier.fillMaxSize().background(Color(0xFF152017).copy(alpha = 0.20f)))
                 }
                 MiniPlayerBackgroundStyle.GRADIENT -> {
                     val colors = if (gradientColors.isNotEmpty()) gradientColors
@@ -511,6 +513,92 @@ private fun NewMiniPlayer(
                     outlineColor = outlineColor,
                     onSurfaceColor = onSurfaceColor,
                 )
+                }
+            }
+            if (miniPlayerBackground == MiniPlayerBackgroundStyle.FAIRY_LIGHTS ||
+                miniPlayerBackground == MiniPlayerBackgroundStyle.LEAVES
+            ) {
+                MiniPlayerAtmosphere(
+                    style = miniPlayerBackground,
+                    trackKey = mediaMetadata?.id,
+                    themeColor = songThemeColor,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Animated decorations for the cozy mini-player styles. Fairy lights use a curved,
+ * swaying wire and glowing dimensional bulbs; leaves drift over the player and rest on its edges.
+ */
+@Composable
+private fun MiniPlayerAtmosphere(
+    style: MiniPlayerBackgroundStyle,
+    trackKey: String?,
+    themeColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    var songChangePulse by remember { mutableStateOf(false) }
+    LaunchedEffect(trackKey, style) {
+        if (trackKey != null) {
+            songChangePulse = true
+            kotlinx.coroutines.delay(5_000)
+            songChangePulse = false
+        }
+    }
+    val motion = rememberInfiniteTransition(label = "miniPlayerAtmosphere")
+    val wind by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(6_500, easing = LinearEasing), RepeatMode.Restart), label = "wind")
+    val shimmer by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(820, easing = LinearEasing), RepeatMode.Restart), label = "lightFlicker")
+
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        if (style == MiniPlayerBackgroundStyle.FAIRY_LIGHTS) {
+            val sway = kotlin.math.sin(wind * (Math.PI * 2.0)).toFloat()
+            val rope = Path().apply {
+                moveTo(-w * 0.03f, h * (0.18f + sway * 0.018f))
+                cubicTo(w * 0.22f, h * (0.34f + sway * 0.02f), w * 0.55f, h * (0.04f - sway * 0.018f), w * 1.04f, h * (0.20f - sway * 0.012f))
+            }
+            drawPath(rope, Color(0xFF17130F).copy(alpha = 0.95f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx()))
+            drawPath(rope, Color.White.copy(alpha = 0.16f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 0.55.dp.toPx()))
+            for (i in 0 until 8) {
+                val t = i / 7f
+                val curveY = 0.18f + 0.10f * kotlin.math.sin(t * Math.PI).toFloat() - 0.09f * t +
+                    sway * 0.018f * kotlin.math.cos(t * Math.PI * 2).toFloat()
+                val x = w * (0.04f + t * 0.92f)
+                val y = h * curveY
+                val individual = (kotlin.math.sin(shimmer * Math.PI * 2 + i * 1.7f) * 0.5f + 0.5f).toFloat()
+                val flicker = if (songChangePulse) 0.18f + individual * 0.82f else 0.70f + individual * 0.30f
+                val bulbColor = if (songChangePulse) Color.lerp(Color(0xFFFFD58A), themeColor, individual * 0.8f) else themeColor
+                drawCircle(bulbColor.copy(alpha = 0.09f * flicker), 12.dp.toPx(), Offset(x, y))
+                drawCircle(bulbColor.copy(alpha = 0.18f * flicker), 7.dp.toPx(), Offset(x, y))
+                drawCircle(bulbColor.copy(alpha = 0.34f * flicker), 4.2.dp.toPx(), Offset(x, y))
+                drawCircle(bulbColor.copy(alpha = flicker), 2.3.dp.toPx(), Offset(x, y))
+                drawCircle(Color.White.copy(alpha = 0.72f * flicker), 0.85.dp.toPx(), Offset(x - 0.7.dp.toPx(), y - 0.7.dp.toPx()))
+            }
+        } else if (style == MiniPlayerBackgroundStyle.LEAVES) {
+            for (i in 0 until 7) {
+                val progress = (wind * (0.20f + i * 0.025f) + i * 0.157f) % 1f
+                val x = w * progress
+                val y = h * (0.18f + ((i % 4) * 0.14f) + kotlin.math.sin((wind * 2.0 + i * 1.3) * Math.PI).toFloat() * 0.08f)
+                val leafWidth = (7 + (i % 3) * 2).dp.toPx()
+                val leafHeight = leafWidth * 1.75f
+                val angle = kotlin.math.sin((wind + i * 0.19f) * Math.PI * 2).toFloat() * 35f + 28f
+                val leafColor = listOf(Color(0xFF8EBB72), Color(0xFF537B45), Color(0xFFB1C98B))[i % 3]
+                rotate(angle, pivot = Offset(x, y)) {
+                    drawOval(leafColor.copy(alpha = 0.92f), Offset(x - leafWidth / 2, y - leafHeight / 2), Size(leafWidth, leafHeight))
+                    drawLine(Color(0xFFD9E7B9).copy(alpha = 0.8f), Offset(x, y - leafHeight * 0.36f), Offset(x, y + leafHeight * 0.38f), strokeWidth = 0.7.dp.toPx())
+                }
+            }
+            for (i in 0 until 3) {
+                val x = w * (0.17f + i * 0.34f)
+                val y = if (i == 1) h * 0.91f else h * 0.10f
+                val leafWidth = 8.dp.toPx()
+                rotate(if (i == 1) 66f else -35f + i * 20f, pivot = Offset(x, y)) {
+                    drawOval(Color(0xFF769B58), Offset(x - leafWidth / 2, y - leafWidth), Size(leafWidth, leafWidth * 2f))
+                    drawLine(Color(0xFFD9E7B9).copy(alpha = 0.85f), Offset(x, y - leafWidth * 0.8f), Offset(x, y + leafWidth * 0.8f), strokeWidth = 0.7.dp.toPx())
                 }
             }
         }
