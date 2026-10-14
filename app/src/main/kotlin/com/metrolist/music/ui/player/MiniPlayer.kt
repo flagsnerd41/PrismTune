@@ -292,10 +292,14 @@ private fun NewMiniPlayer(
         MiniPlayerBackgroundStyle.BLUR       -> MaterialTheme.colorScheme.surfaceContainer
         MiniPlayerBackgroundStyle.GRADIENT   -> MaterialTheme.colorScheme.surfaceContainer
         MiniPlayerBackgroundStyle.PURE_BLACK -> Color.Black
+        MiniPlayerBackgroundStyle.FAIRY_LIGHTS -> Color.Black
+        MiniPlayerBackgroundStyle.LEAVES -> Color.Black
     }
     val forceLightColors = !useDarkTheme && (miniPlayerBackground == MiniPlayerBackgroundStyle.PURE_BLACK ||
             miniPlayerBackground == MiniPlayerBackgroundStyle.BLUR ||
-            miniPlayerBackground == MiniPlayerBackgroundStyle.GRADIENT)
+            miniPlayerBackground == MiniPlayerBackgroundStyle.GRADIENT ||
+            miniPlayerBackground == MiniPlayerBackgroundStyle.FAIRY_LIGHTS ||
+            miniPlayerBackground == MiniPlayerBackgroundStyle.LEAVES)
 
     val primaryColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.primary
     val outlineColor = if (forceLightColors) Color.White else MaterialTheme.colorScheme.outline
@@ -407,6 +411,28 @@ private fun NewMiniPlayer(
                             )
                         }
                     }
+                }
+                MiniPlayerBackgroundStyle.FAIRY_LIGHTS -> {
+                    AsyncImage(
+                        model = "https://images.unsplash.com/photo-1546109615-00119b061112?auto=format&fit=crop&w=1200&q=80",
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().blur(4.dp),
+                    )
+                    Box(
+                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)),
+                    )
+                }
+                MiniPlayerBackgroundStyle.LEAVES -> {
+                    AsyncImage(
+                        model = "https://images.unsplash.com/photo-1620007922564-9b6b3759f213?auto=format&fit=crop&w=1200&q=80",
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().blur(3.dp),
+                    )
+                    Box(
+                        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f)),
+                    )
                 }
                 MiniPlayerBackgroundStyle.GRADIENT -> {
                     val colors = if (gradientColors.isNotEmpty()) gradientColors
