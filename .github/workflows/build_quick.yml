@@ -1,7 +1,5 @@
 name: PrismTune APK (Manual Build)
 
-# Manual only: on push this built exactly the same FOSS release APK as the
-# "Build Release (foss)" job in build.yml, doubling the cost of every push.
 on:
   workflow_dispatch:
 
@@ -15,11 +13,139 @@ concurrency:
 jobs:
   build_quick:
     name: Build PrismTune APK
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Restore and patch HomeScreen (Speed Dial -> large Quick Picks)
+        run: |
+          set -e
+          HS=app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt
+          git show 1c18498f9ad70b914e460ee8ae95dbba06ab8bc6:"$HS" > "$HS"
+
+          python3 << 'PY'
+          from pathlib import Path
+          path = Path('app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt')
+          text = path.read_text()
+
+          old = '            if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n'
+          new = '            // Speed Dial removed in favor of ArchiveTune-style Quick Picks\n            // if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n'
+          if old not in text:
+              raise SystemExit('speed dial line not found')
+          text = text.replace(old, new, 1)
+
+          start = text.find('                                item(key = "quick_picks_list") {')
+          if start < 0:
+              raise SystemExit('quick_picks_list not found')
+          end = text.find('                        HomeSection.FromTheCommunity -> {', start)
+          if end < 0:
+              raise SystemExit('FromTheCommunity not found')
+
+          before, after = text[:start], text[end:]
+          replacement = '''                                item(key = "quick_picks_list") {
+                                    // ArchiveTune-style large horizontal Quick Picks cards
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        items(
+                                            items = quickPicks.distinctBy { it.id },
+                                            key = { "home_quickpick_${it.id}" },
+                                        ) { originalSong ->
+                                            val song by database
+                                                .song(originalSong.id)
+                                                .collectAsStateWithLifecycle(initialValue = originalSong)
+                                            val display = song ?: originalSong
+
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .width(280.dp)
+                                                        .height(320.dp)
+                                                        .clip(RoundedCornerShape(24.dp))
+                                                        .combinedClickable(
+                                                            onClick = {
+                                                                if (!isListenTogetherGuest) {
+                                                                    playerConnection.playQueue(
+                                                                        if (autoRadioQueue) {
+                                                                            YouTubeQueue.radio(display.toMediaMetadata())
+                                                                        } else {
+                                                                            ListQueue(
+                                                                                title = display.title,
+                                                                                items = listOf(display.toMediaItem()),
+                                                                            )
+                                                                        },
+                                                                    )
+                                                                }
+                                                            },
+                                                            onLongClick = {
+                                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                                menuState.show {
+                                                                    SongMenu(
+                                                                        originalSong = display,
+                                                                        onDismiss = menuState::dismiss,
+                                                                    )
+                                                                }
+                                                            },
+                                                        ),
+                                            ) {
+                                                AsyncImage(
+                                                    model = display.thumbnailUrl?.resize(800, 800),
+                                                    contentDescription = null,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                                Box(
+                                                    modifier =
+                                                        Modifier
+                                                            .fillMaxSize()
+                                                            .background(
+                                                                Brush.verticalGradient(
+                                                                    colors =
+                                                                        listOf(
+                                                                            Color.Transparent,
+                                                                            Color.Black.copy(alpha = 0.75f),
+                                                                        ),
+                                                                ),
+                                                            ),
+                                                )
+                                                Column(
+                                                    modifier =
+                                                        Modifier
+                                                            .align(Alignment.BottomStart)
+                                                            .padding(16.dp),
+                                                ) {
+                                                    Text(
+                                                        text = display.title,
+                                                        style = MaterialTheme.typography.titleLarge,
+                                                        color = Color.White,
+                                                        maxLines = 2,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                    )
+                                                    Text(
+                                                        text = display.artists.joinToArtistString(" • ") { it.name },
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = Color.White.copy(alpha = 0.85f),
+                                                        maxLines = 1,
+                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+'''
+          path.write_text(before + replacement + after)
+          print('HomeScreen patched', path.stat().st_size)
+          PY
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -36,8 +162,21 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build PrismTune APK (No Lint)
-        run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
+      - name: Generate debug keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build PrismTune Debug APK
+        run: ./gradlew --console=plain assembleFossDebug --warning-mode summary -x lint
         env:
           METROLIST_APPLICATION_ID: com.prismtune.music.test
           METROLIST_APP_NAME: PrismTune Testing
@@ -46,24 +185,15 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Sign APK
-        uses: ilharp/sign-android-release@v2.0.0
-        with:
-          releaseDir: app/build/outputs/apk/foss/release/
-          signingKey: ${{ secrets.KEYSTORE }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 36.0.0
-
-      - name: Move signed APK
+      - name: Prepare APK for upload
         run: |
-          OUTPUT_DIR="app/build/outputs/apk/foss/release"
+          OUTPUT_DIR="app/build/outputs/apk/foss/debug"
           mkdir -p "$OUTPUT_DIR/out"
-          find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | xargs -I{} mv {} "$OUTPUT_DIR/out/app-universal-test-release.apk"
+          find "$OUTPUT_DIR" -name "*.apk" | head -1 | xargs -I{} cp {} "$OUTPUT_DIR/out/PrismTune-test-debug.apk"
+          ls -la "$OUTPUT_DIR/out"
 
-      - name: Upload Signed APK
+      - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
-          name: PrismTune-universal-test-release
-          path: app/build/outputs/apk/foss/release/out/*
+          name: PrismTune-universal-test-debug
+          path: app/build/outputs/apk/foss/debug/out/*
