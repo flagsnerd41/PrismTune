@@ -1192,6 +1192,119 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
 
+                item(key = "prism_home_intro") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 4.dp),
+                    ) {
+                        Text(
+                            text = "YOUR SOUNDTRACK",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            letterSpacing = 2.sp,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Find your next\nfavorite.",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
+                            lineHeight = 36.sp,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Your music, picked for this moment.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (mediaMetadata != null) {
+                    item(key = "prism_now_playing_feature") {
+                        val activeTrack = mediaMetadata!!
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                                                MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.10f),
+                                            ),
+                                        ),
+                                    )
+                                    .padding(14.dp),
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    AsyncImage(
+                                        model = activeTrack.thumbnailUrl,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(76.dp)
+                                            .clip(RoundedCornerShape(20.dp)),
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isPlaying) "NOW PLAYING" else "PICK UP WHERE YOU LEFT OFF",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            letterSpacing = 1.sp,
+                                        )
+                                        Spacer(modifier = Modifier.height(5.dp))
+                                        Text(
+                                            text = activeTrack.title,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            text = activeTrack.artists.joinToString(" • ") { it.name },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { playerConnection.togglePlayPause() },
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .background(MaterialTheme.colorScheme.primary, CircleShape),
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(if (isPlaying) R.drawable.ic_widget_play else R.drawable.ic_widget_play),
+                                            contentDescription = if (isPlaying) "Pause or resume playback" else "Resume playback",
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
