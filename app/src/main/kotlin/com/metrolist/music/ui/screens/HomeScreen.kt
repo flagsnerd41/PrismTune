@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -1190,14 +1191,83 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "prism_tune_header") {
-                    Text(
-                        text = "prismTune",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 8.dp),
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .clip(RoundedCornerShape(26.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color(0xFF7C4DFF).copy(alpha = 0.19f),
+                                        Color(0xFF4FC3F7).copy(alpha = 0.10f),
+                                        MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.82f),
+                                    ),
+                                ),
+                            )
+                            .border(
+                                width = 1.dp,
+                                brush = Brush.linearGradient(
+                                    listOf(Color.White.copy(alpha = 0.25f), Color(0xFFB6A1FF).copy(alpha = 0.18f), Color.White.copy(alpha = 0.05f)),
+                                ),
+                                shape = RoundedCornerShape(26.dp),
+                            )
+                            .padding(horizontal = 14.dp, vertical = 13.dp),
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(0xFF9D75FF), Color(0xFF6754D9), Color(0xFF45C8E8)),
+                                    ),
+                                ),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.play),
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.padding(start = 12.dp).weight(1f),
+                        ) {
+                            Text(
+                                text = "PrismTune",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "YOUR MUSIC, IN A NEW LIGHT",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 1.2.sp,
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier.height(22.dp).padding(end = 2.dp),
+                        ) {
+                            listOf(8.dp, 15.dp, 11.dp, 20.dp, 13.dp).forEachIndexed { index, barHeight ->
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .height(barHeight)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            listOf(Color(0xFFB9A3FF), Color(0xFF8D79FF), Color(0xFF66D4E8))[index % 3],
+                                        ),
+                                )
+                            }
+                        }
+                    }
                 }
                 item {
                     ChipsRow(
