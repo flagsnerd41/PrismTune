@@ -1195,33 +1195,47 @@ fun HomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                            .padding(horizontal = 22.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "prism",
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                    letterSpacing = (-1.5).sp,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
+                                text = "PRISMTUNE  /  LISTENING ROOM",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 1.4.sp,
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
                             Box(
                                 modifier = Modifier
-                                    .size(7.dp)
+                                    .size(6.dp)
                                     .clip(CircleShape)
                                     .background(Color(0xFF8DDBB6)),
                             )
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "prism",
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                                    letterSpacing = (-2.2).sp,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "—",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color(0xFF8DDBB6),
+                            )
+                        }
                         Text(
-                            text = "YOUR NEXT FAVORITE STARTS HERE",
-                            style = MaterialTheme.typography.labelSmall,
+                            text = "A little less scrolling. A lot more listening.",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            letterSpacing = 1.6.sp,
-                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
                 }
