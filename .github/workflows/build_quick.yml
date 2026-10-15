@@ -14,7 +14,7 @@ jobs:
   build_quick:
     name: Build PrismTune Release APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,26 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Sign release APK with jarsigner
+      - name: Install Android build-tools (zipalign + apksigner)
+        run: |
+          set -e
+          # GitHub runners usually have Android SDK; install build-tools if needed
+          if [ -z "$ANDROID_HOME" ]; then
+            export ANDROID_HOME=$HOME/android-sdk
+            mkdir -p "$ANDROID_HOME/cmdline-tools"
+          fi
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          # Prefer existing tools
+          if ! find "$ANDROID_HOME" -name zipalign 2>/dev/null | grep -q .; then
+            CMDTOOLS=$(find "$ANDROID_HOME" -path "*/cmdline-tools/*/bin/sdkmanager" 2>/dev/null | head -1)
+            if [ -n "$CMDTOOLS" ]; then
+              yes | "$CMDTOOLS" --sdk_root="$ANDROID_HOME" "build-tools;34.0.0" || true
+            fi
+          fi
+          find "$ANDROID_HOME" -name zipalign 2>/dev/null | head -3
+          find "$ANDROID_HOME" -name apksigner 2>/dev/null | head -3
+
+      - name: Sign and zipalign release APK
         run: |
           set -e
           OUTPUT_DIR="app/build/outputs/apk/foss/release"
@@ -69,17 +88,44 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=PrismTune Test,O=PrismTune,C=US"
 
-          UNSIGNED=$(find "$OUTPUT_DIR" -name "*.apk" ! -name "*-signed.apk" | head -1)
+          UNSIGNED=$(find "$OUTPUT_DIR" -name "*.apk" ! -name "*-signed.apk" ! -name "*-aligned.apk" | head -1)
           echo "Unsigned: $UNSIGNED"
           test -n "$UNSIGNED"
 
-          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore test-release.keystore \
-            -storepass android -keypass android \
-            "$UNSIGNED" prismtune
+          ZIPALIGN=$(find "$ANDROID_HOME" -name zipalign 2>/dev/null | head -1)
+          APSIGNER=$(find "$ANDROID_HOME" -name apksigner 2>/dev/null | head -1)
 
-          cp "$UNSIGNED" "$OUTPUT_DIR/out/PrismTune-release.apk"
+          ALIGNED="$OUTPUT_DIR/app-aligned.apk"
+          SIGNED="$OUTPUT_DIR/out/PrismTune-release.apk"
+
+          if [ -n "$ZIPALIGN" ] && [ -n "$APSIGNER" ]; then
+            echo "Using zipalign=$ZIPALIGN"
+            echo "Using apksigner=$APSIGNER"
+            # apksigner requires zipalign BEFORE signing
+            "$ZIPALIGN" -f -p 4 "$UNSIGNED" "$ALIGNED"
+            "$APSIGNER" sign \
+              --ks test-release.keystore \
+              --ks-pass pass:android \
+              --ks-key-alias prismtune \
+              --key-pass pass:android \
+              --out "$SIGNED" \
+              "$ALIGNED"
+            "$APSIGNER" verify --verbose "$SIGNED" || true
+          else
+            echo "WARNING: zipalign/apksigner missing — jarsigner + zipalign fallback"
+            jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore test-release.keystore \
+              -storepass android -keypass android \
+              "$UNSIGNED" prismtune
+            if [ -n "$ZIPALIGN" ]; then
+              "$ZIPALIGN" -f 4 "$UNSIGNED" "$SIGNED"
+            else
+              cp "$UNSIGNED" "$SIGNED"
+            fi
+          fi
+
           ls -la "$OUTPUT_DIR/out"
+          file "$SIGNED"
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
