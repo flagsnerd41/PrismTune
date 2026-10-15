@@ -1191,54 +1191,7 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
-                item(key = "prism_tune_header") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 22.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "PRISMTUNE  /  LISTENING ROOM",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                letterSpacing = 1.4.sp,
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF8DDBB6)),
-                            )
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "prism",
-                                style = MaterialTheme.typography.displaySmall.copy(
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                                    letterSpacing = (-2.2).sp,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "—",
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = Color(0xFF8DDBB6),
-                            )
-                        }
-                        Text(
-                            text = "A little less scrolling. A lot more listening.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
