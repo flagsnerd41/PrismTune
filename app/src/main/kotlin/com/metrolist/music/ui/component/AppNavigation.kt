@@ -157,7 +157,7 @@ fun AppNavigationBar(
 ) {
     val containerColor =
         if (pureBlack) Color.Black.copy(alpha = 0.94f)
-        else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.88f)
+        else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     // Reuse the current track artwork as a lightweight backdrop for the floating glass bar.
     val currentArtworkUrl = LocalPlayerConnection.current?.mediaMetadata?.collectAsState()?.value?.thumbnailUrl
@@ -179,7 +179,7 @@ fun AppNavigationBar(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
                     shape = RoundedCornerShape(28.dp),
                 ),
         ) {
