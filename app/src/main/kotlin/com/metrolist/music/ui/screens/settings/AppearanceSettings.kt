@@ -580,6 +580,7 @@ fun AppearanceSettings(
                     MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                     MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                     MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
+                    else -> stringResource(R.string.follow_theme)
                 }
             },
         )
@@ -1082,6 +1083,7 @@ fun AppearanceSettings(
                                                 MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
                                                 MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
                                                 MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
+                                                else -> stringResource(R.string.follow_theme)
                                             }
                                         },
                                     color =
