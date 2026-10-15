@@ -6,12 +6,21 @@
 package com.metrolist.music.ui.screens.library
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import com.metrolist.music.LocalNavController
 import com.metrolist.music.R
@@ -31,7 +40,24 @@ fun LibraryScreen() {
     var playlistViewType by rememberEnumPreference(PlaylistViewTypeKey, LibraryViewType.GRID)
 
     val filterContent = @Composable {
-        Row {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
+        ) {
+            Text(
+                text = "Your library",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = "Your music, collected in one place.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
             ChipsRow(
                 chips = listOf(
                     LibraryFilter.PLAYLISTS to stringResource(R.string.filter_playlists),
@@ -44,7 +70,7 @@ fun LibraryScreen() {
                 onValueUpdate = {
                     filterType = if (filterType == it) LibraryFilter.LIBRARY else it
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
