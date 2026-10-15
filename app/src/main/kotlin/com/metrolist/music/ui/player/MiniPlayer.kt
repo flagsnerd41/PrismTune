@@ -392,6 +392,38 @@ private fun NewMiniPlayer(
                         onClick = onClick
                     ),
         ) {
+            // A subtle specular sheen gives the capsule a glass surface without obscuring controls.
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.13f),
+                                Color.White.copy(alpha = 0.035f),
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.045f),
+                            ),
+                        ),
+                    ),
+            )
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.42f),
+                                Color(0xFFB8A4FF).copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.12f),
+                                Color.Transparent,
+                            ),
+                        ),
+                    ),
+            )
             when (miniPlayerBackground) {
                 MiniPlayerBackgroundStyle.BLUR -> {
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
