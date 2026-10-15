@@ -423,7 +423,7 @@ fun BottomSheetPlayer(
                         ImageRequest
                             .Builder(context)
                             .data(currentMetadata.thumbnailUrl)
-                            .size(100, 100)
+                            .size(500, 500)
                             .allowHardware(false)
                             .memoryCacheKey("gradient_${currentMetadata.id}")
                             .build()
@@ -864,13 +864,13 @@ fun BottomSheetPlayer(
                                         modifier =
                                             Modifier
                                                 .fillMaxSize()
-                                                .blur(if (useDarkTheme) 150.dp else 100.dp),
+                                                .blur(if (useDarkTheme) 76.dp else 64.dp),
                                     )
                                     Box(
                                         modifier =
                                             Modifier
                                                 .fillMaxSize()
-                                                .background(Color.Black.copy(alpha = 0.3f)),
+                                                .background(Color.Black.copy(alpha = 0.18f)),
                                     )
                                 }
                             }
