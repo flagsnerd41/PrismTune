@@ -25,7 +25,7 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFF8B7CFF)
+val DefaultThemeColor = Color(0xFF9D75FF)
 
 @Composable
 fun MetrolistTheme(
