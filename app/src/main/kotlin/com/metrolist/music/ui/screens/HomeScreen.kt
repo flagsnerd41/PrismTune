@@ -1293,7 +1293,7 @@ fun HomeScreen(
                                             .background(MaterialTheme.colorScheme.primary, CircleShape),
                                     ) {
                                         Icon(
-                                            painter = painterResource(if (isPlaying) R.drawable.ic_widget_play else R.drawable.ic_widget_play),
+                                            painter = painterResource(if (isPlaying) R.drawable.ic_widget_pause else R.drawable.ic_widget_play),
                                             contentDescription = if (isPlaying) "Pause or resume playback" else "Resume playback",
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.size(24.dp),
