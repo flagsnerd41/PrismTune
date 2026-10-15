@@ -383,30 +383,16 @@ private fun NewMiniPlayer(
                     .then(if (isTabletLandscape) Modifier.width(500.dp).align(Alignment.Center) else Modifier.fillMaxWidth())
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(32.dp))
+                    .clip(RoundedCornerShape(26.dp))
                     .background(color = backgroundColor)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
+                    .border(1.dp, outlineColor.copy(alpha = 0.22f), RoundedCornerShape(26.dp))
                     .clickable(
                         interactionSource = interactionSource,
                         indication = LocalIndication.current,
                         onClick = onClick
                     ),
         ) {
-            // A subtle specular sheen gives the capsule a glass surface without obscuring controls.
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.13f),
-                                Color.White.copy(alpha = 0.035f),
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.045f),
-                            ),
-                        ),
-                    ),
-            )
+            // A restrained top highlight gives the translucent surface definition.
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -416,9 +402,8 @@ private fun NewMiniPlayer(
                         Brush.horizontalGradient(
                             listOf(
                                 Color.Transparent,
-                                Color.White.copy(alpha = 0.42f),
-                                Color(0xFFB8A4FF).copy(alpha = 0.28f),
-                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.10f),
                                 Color.Transparent,
                             ),
                         ),
