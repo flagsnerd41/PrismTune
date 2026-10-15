@@ -419,12 +419,12 @@ private fun NewMiniPlayer(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .blur(60.dp),
+                                    .blur(28.dp),
                             )
                             Box(
                                 Modifier
                                     .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.45f)),
+                                    .background(Color.Black.copy(alpha = 0.20f)),
                             )
                         }
                     }
