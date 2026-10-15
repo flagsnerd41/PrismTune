@@ -39,9 +39,6 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set Up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -58,7 +55,7 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Sign release APK
+      - name: Sign release APK with jarsigner
         run: |
           set -e
           OUTPUT_DIR="app/build/outputs/apk/foss/release"
@@ -74,23 +71,14 @@ jobs:
 
           UNSIGNED=$(find "$OUTPUT_DIR" -name "*.apk" ! -name "*-signed.apk" | head -1)
           echo "Unsigned: $UNSIGNED"
+          test -n "$UNSIGNED"
 
-          APSIGNER=$(find "$ANDROID_HOME" -name apksigner 2>/dev/null | head -1)
-          if [ -n "$APSIGNER" ]; then
-            "$APSIGNER" sign \
-              --ks test-release.keystore \
-              --ks-pass pass:android \
-              --key-pass pass:android \
-              --out "$OUTPUT_DIR/out/PrismTune-release.apk" \
-              "$UNSIGNED"
-          else
-            jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
-              -keystore test-release.keystore \
-              -storepass android -keypass android \
-              "$UNSIGNED" prismtune
-            cp "$UNSIGNED" "$OUTPUT_DIR/out/PrismTune-release.apk"
-          fi
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore test-release.keystore \
+            -storepass android -keypass android \
+            "$UNSIGNED" prismtune
 
+          cp "$UNSIGNED" "$OUTPUT_DIR/out/PrismTune-release.apk"
           ls -la "$OUTPUT_DIR/out"
 
       - name: Upload Release APK
