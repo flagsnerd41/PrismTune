@@ -220,3 +220,45 @@ fun PrismTitleBanner(modifier: Modifier = Modifier) {
         )
     }
 }
+
+@Composable
+fun PrismTitleBanner(modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    val pulse by rememberInfiniteTransition(label = "titleGlow").animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "titleGlowPulse",
+    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            modifier
+                .height(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(primary.copy(alpha = 0.60f), secondary.copy(alpha = 0.45f), tertiary.copy(alpha = 0.60f)),
+                    ),
+                ).drawBehind {
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.16f * pulse),
+                        radius = size.height * 0.9f,
+                        center = Offset(size.width * 0.85f, size.height * 0.1f),
+                    )
+                }.padding(horizontal = 16.dp),
+    ) {
+        Text(
+            text = "PrismTune",
+            color = Color.White,
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    shadow = Shadow(color = Color.White.copy(alpha = pulse), offset = Offset.Zero, blurRadius = 24f),
+                ),
+        )
+    }
+}

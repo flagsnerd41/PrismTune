@@ -25,6 +25,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.graphics.Brush
 import com.metrolist.music.ui.component.WelcomeSplash
 import com.metrolist.music.ui.component.PrismTitleBanner
+import com.metrolist.music.ui.component.PrismTitleBanner
 import com.metrolist.music.ui.component.WelcomeSplashState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
