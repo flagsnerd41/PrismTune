@@ -59,8 +59,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Generate temporary signing keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/prismtune-release.jks" \
+            -storepass android \
+            -alias prismtune \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=PrismTune,O=PrismTune,C=US"
+
       - name: Build Release APK
-        run: ./gradlew --console=plain assemble${{ matrix.variantName }}Release --warning-mode summary
+        run: |
+          ./gradlew --console=plain assemble${{ matrix.variantName }}Release --warning-mode summary \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/prismtune-release.jks" \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=prismtune \
+            -Pandroid.injected.signing.key.password=android
         env:
           METROLIST_APPLICATION_ID: com.metrolist.music
           METROLIST_APP_NAME: Metrolist Nightly
@@ -69,16 +84,6 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
-
-      - name: Sign APK
-        uses: ilharp/sign-android-release@v2.0.0
-        with:
-          releaseDir: app/build/outputs/apk/${{ matrix.variant }}/release/
-          signingKey: ${{ secrets.KEYSTORE }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 36.0.0
 
       - name: Move signed APK
         run: |
@@ -89,7 +94,9 @@ jobs:
           else
             TARGET_NAME="app-universal-release.apk"
           fi
-          find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | xargs -I{} mv {} "$OUTPUT_DIR/out/$TARGET_NAME"
+          APK=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.apk" ! -name "*-unsigned.apk" | head -n 1)
+          test -n "$APK"
+          cp "$APK" "$OUTPUT_DIR/out/$TARGET_NAME"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v7
