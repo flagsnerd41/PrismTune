@@ -22,140 +22,12 @@ jobs:
           ref: rebrand/prismtune
           fetch-depth: 0
 
-      - name: Restore HomeScreen + UI patch (no Speed Dial, large Quick Picks)
+      - name: Patch HomeScreen (no Speed Dial, large Quick Picks)
         run: |
-          set -e
-          HS="app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt"
-          # Always start from last known-good full file
-          git show 1c18498f9ad70b914e460ee8ae95dbba06ab8bc6:"$HS" > "$HS"
-
-          python3 << 'PY'
-          from pathlib import Path
-          path = Path("app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt")
-          text = path.read_text()
-
-          # 1) Hide Speed Dial from home sections
-          old = "            if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
-          new = (
-              "            // Speed Dial removed — ArchiveTune-style Quick Picks only\n"
-              "            // if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
-          )
-          if old not in text:
-              raise SystemExit("speed dial add line not found")
-          text = text.replace(old, new, 1)
-
-          # 2) Replace Quick Picks grid with large horizontal cards
-          start = text.find('                                item(key = "quick_picks_list") {')
-          if start < 0:
-              raise SystemExit("quick_picks_list not found")
-          end = text.find("                        HomeSection.FromTheCommunity -> {", start)
-          if end < 0:
-              raise SystemExit("FromTheCommunity not found")
-
-          before, after = text[:start], text[end:]
-          replacement = r'''                                item(key = "quick_picks_list") {
-                                    // ArchiveTune-style large horizontal Quick Picks cards
-                                    LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        items(
-                                            items = quickPicks.distinctBy { it.id },
-                                            key = { "home_quickpick_${it.id}" },
-                                        ) { originalSong ->
-                                            val song by database
-                                                .song(originalSong.id)
-                                                .collectAsStateWithLifecycle(initialValue = originalSong)
-                                            val display = song ?: originalSong
-
-                                            Box(
-                                                modifier =
-                                                    Modifier
-                                                        .width(280.dp)
-                                                        .height(320.dp)
-                                                        .clip(RoundedCornerShape(24.dp))
-                                                        .combinedClickable(
-                                                            onClick = {
-                                                                if (!isListenTogetherGuest) {
-                                                                    playerConnection.playQueue(
-                                                                        if (autoRadioQueue) {
-                                                                            YouTubeQueue.radio(display.toMediaMetadata())
-                                                                        } else {
-                                                                            ListQueue(
-                                                                                title = display.title,
-                                                                                items = listOf(display.toMediaItem()),
-                                                                            )
-                                                                        },
-                                                                    )
-                                                                }
-                                                            },
-                                                            onLongClick = {
-                                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                                menuState.show {
-                                                                    SongMenu(
-                                                                        originalSong = display,
-                                                                        onDismiss = menuState::dismiss,
-                                                                    )
-                                                                }
-                                                            },
-                                                        ),
-                                            ) {
-                                                AsyncImage(
-                                                    model = display.thumbnailUrl?.resize(800, 800),
-                                                    contentDescription = null,
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier.fillMaxSize(),
-                                                )
-                                                Box(
-                                                    modifier =
-                                                        Modifier
-                                                            .fillMaxSize()
-                                                            .background(
-                                                                Brush.verticalGradient(
-                                                                    colors =
-                                                                        listOf(
-                                                                            Color.Transparent,
-                                                                            Color.Black.copy(alpha = 0.75f),
-                                                                        ),
-                                                                ),
-                                                            ),
-                                                )
-                                                Column(
-                                                    modifier =
-                                                        Modifier
-                                                            .align(Alignment.BottomStart)
-                                                            .padding(16.dp),
-                                                ) {
-                                                    Text(
-                                                        text = display.title,
-                                                        style = MaterialTheme.typography.titleLarge,
-                                                        color = Color.White,
-                                                        maxLines = 2,
-                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                    )
-                                                    Text(
-                                                        text = display.artists.joinToArtistString(" • ") { it.name },
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = Color.White.copy(alpha = 0.85f),
-                                                        maxLines = 1,
-                                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-'''
-          path.write_text(before + replacement + after)
-          print("patched ok", path.stat().st_size)
-          assert "Speed Dial removed" in path.read_text()
-          assert "ArchiveTune-style large horizontal Quick Picks" in path.read_text()
-          PY
-          wc -c "$HS"
+          # Script lives on main; fetch it for this workspace
+          git fetch origin main
+          git show origin/main:.github/scripts/patch_homescreen.py > /tmp/patch_homescreen.py
+          python3 /tmp/patch_homescreen.py
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -204,7 +76,6 @@ jobs:
           SIGNED="$OUTPUT_DIR/out/PrismTune-release.apk"
 
           if [ -n "$ZIPALIGN" ] && [ -n "$APSIGNER" ]; then
-            echo "Using zipalign + apksigner"
             "$ZIPALIGN" -f -p 4 "$UNSIGNED" "$ALIGNED"
             "$APSIGNER" sign \
               --ks test-release.keystore \
@@ -214,7 +85,6 @@ jobs:
               --out "$SIGNED" \
               "$ALIGNED"
           else
-            echo "Fallback jarsigner"
             jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore test-release.keystore \
               -storepass android -keypass android \
