@@ -22,11 +22,26 @@ jobs:
           ref: rebrand/prismtune
           fetch-depth: 0
 
-      - name: Patch HomeScreen (no Speed Dial, large Quick Picks)
+      - name: Polish MiniPlayer + restore full AboutScreen
         run: |
-          git fetch origin main
-          git show origin/main:.github/scripts/patch_homescreen.py > /tmp/patch_homescreen.py
-          python3 /tmp/patch_homescreen.py
+          set -e
+          # Restore full AboutScreen from last good full revision, then retarget links
+          ABOUT=app/src/main/kotlin/com/metrolist/music/ui/screens/settings/AboutScreen.kt
+          git show 25fbc45eccc81f60223be40ff96126dc2aae7c87:"$ABOUT" > "$ABOUT"
+          sed -i \
+            -e 's|https://github.com/MetrolistGroup/Metrolist/blob/main/LICENSE|https://github.com/flagsnerd41/PrismTune2/blob/main/LICENSE|g' \
+            -e 's|https://github.com/MetrolistGroup/Metrolist|https://github.com/flagsnerd41/PrismTune2|g' \
+            "$ABOUT"
+
+          # Default mini player to BLUR + slightly softer glass overlay
+          MP=app/src/main/kotlin/com/metrolist/music/ui/player/MiniPlayer.kt
+          sed -i \
+            -e 's/defaultValue = MiniPlayerBackgroundStyle.DEFAULT/defaultValue = MiniPlayerBackgroundStyle.BLUR/' \
+            -e 's/Color.Black.copy(alpha = 0.45f)/Color.Black.copy(alpha = 0.32f)/' \
+            "$MP"
+
+          grep -n "MiniPlayerBackgroundStyle.BLUR" "$MP" | head -3
+          grep -n "PrismTune2" "$ABOUT" | head -5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -76,8 +91,7 @@ jobs:
           test -n "$APK"
           cp "$APK" "$OUT/PrismTune-release.apk"
           ls -la "$OUT"
-          # Basic integrity check
-          unzip -t "$OUT/PrismTune-release.apk" | tail -5
+          unzip -t "$OUT/PrismTune-release.apk" | tail -3
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
