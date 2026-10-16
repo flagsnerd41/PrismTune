@@ -6,6 +6,8 @@
 package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -1185,9 +1187,33 @@ fun HomeScreen(
                     )
                 }
 
+            val tonalStart = MaterialTheme.colorScheme.primaryContainer
+            val tonalMiddle = MaterialTheme.colorScheme.secondaryContainer
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(430.dp)
+                        .align(Alignment.TopCenter)
+                        .drawWithCache {
+                            val brush =
+                                Brush.verticalGradient(
+                                    0f to tonalStart.copy(alpha = 0.30f),
+                                    0.42f to tonalMiddle.copy(alpha = 0.14f),
+                                    1f to Color.Transparent,
+                                )
+                            onDrawBehind { drawRect(brush) }
+                        },
+            )
+
             LazyColumn(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                modifier =
+                    Modifier
+                        .widthIn(max = 1200.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter),
             ) {
                 item {
                     ChipsRow(
