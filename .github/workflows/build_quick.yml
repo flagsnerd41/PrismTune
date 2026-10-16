@@ -24,7 +24,6 @@ jobs:
 
       - name: Patch HomeScreen (no Speed Dial, large Quick Picks)
         run: |
-          # Script lives on main; fetch it for this workspace
           git fetch origin main
           git show origin/main:.github/scripts/patch_homescreen.py > /tmp/patch_homescreen.py
           python3 /tmp/patch_homescreen.py
@@ -44,8 +43,8 @@ jobs:
       - name: Build FOSS Release APK
         run: ./gradlew --console=plain assembleFossRelease --warning-mode summary -x lint -x lintFossRelease
         env:
-          METROLIST_APPLICATION_ID: com.prismtune.music.test
-          METROLIST_APP_NAME: PrismTune Testing
+          METROLIST_APPLICATION_ID: com.prismtune.music
+          METROLIST_APP_NAME: PrismTune
           PULL_REQUEST: "false"
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
@@ -63,7 +62,7 @@ jobs:
             -alias prismtune \
             -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=PrismTune Test,O=PrismTune,C=US"
+            -dname "CN=PrismTune,O=PrismTune,C=US"
 
           UNSIGNED=$(find "$OUTPUT_DIR" -name "*.apk" ! -name "*-signed.apk" ! -name "*-aligned.apk" | head -1)
           echo "Unsigned: $UNSIGNED"
