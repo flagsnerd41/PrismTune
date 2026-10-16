@@ -167,7 +167,6 @@ import com.metrolist.music.models.MediaMetadata
 import com.metrolist.music.ui.component.BottomSheet
 import com.metrolist.music.ui.component.BottomSheetState
 import com.metrolist.music.ui.component.PrismNature
-import com.metrolist.music.ui.component.PrismNature
 import com.metrolist.music.ui.component.LocalBottomSheetPageState
 import com.metrolist.music.ui.component.LocalMenuState
 import com.metrolist.music.ui.component.Lyrics
@@ -917,7 +916,6 @@ fun BottomSheetPlayer(
                         PlayerBackgroundStyle.DEFAULT
                     }
                 }
-                PrismNature(active = backgroundAlpha > 0.02f, modifier = Modifier.fillMaxSize().alpha(backgroundAlpha))
                 PrismNature(active = backgroundAlpha > 0.02f, modifier = Modifier.fillMaxSize().alpha(backgroundAlpha))
             }
         },
