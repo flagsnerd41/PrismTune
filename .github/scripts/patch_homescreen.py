@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port ArchiveTune-style Quick Picks hero carousel; hide Speed Dial."""
+"""Hide Speed Dial; Quick Picks as big carousel cards (same API as Daily Discover)."""
 from pathlib import Path
 import subprocess
 import sys
@@ -13,23 +13,12 @@ text = HS.read_text()
 
 old = "            if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
 new = (
-    "            // Speed Dial removed — ArchiveTune Quick Picks hero carousel instead\n"
+    "            // Speed Dial removed — big Quick Picks carousel instead\n"
     "            // if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
 )
 if old not in text:
     sys.exit("speed dial add line not found")
 text = text.replace(old, new, 1)
-
-if "HorizontalCenteredHeroCarousel" not in text:
-    anchor = "import androidx.compose.foundation.lazy.LazyRow\n"
-    inject = (
-        anchor
-        + "import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel\n"
-        + "import androidx.compose.material3.carousel.rememberCarouselState\n"
-    )
-    if anchor not in text:
-        sys.exit("LazyRow import not found for carousel inject")
-    text = text.replace(anchor, inject, 1)
 
 start = text.find('                                item(key = "quick_picks_list") {')
 if start < 0:
@@ -40,30 +29,27 @@ if end < 0:
 
 before, after = text[:start], text[end:]
 
+# Use HorizontalMultiBrowseCarousel — already used for Daily Discover in this file
 replacement = r'''                                item(key = "quick_picks_list") {
-                                    // ArchiveTune-style Quick Picks hero carousel
+                                    // Big ArchiveTune-style tiles using the same carousel as Daily Discover
                                     val distinctQuickPicks = quickPicks.distinctBy { it.id }
-                                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                                        val heroHeight =
-                                            when {
-                                                maxWidth >= 840.dp -> 380.dp
-                                                maxWidth >= 600.dp -> 356.dp
-                                                else -> 332.dp
-                                            }
-                                        val heroMaxWidth =
-                                            (maxWidth - 48.dp)
-                                                .coerceAtLeast(232.dp)
-                                                .coerceAtMost(440.dp)
-
-                                        HorizontalCenteredHeroCarousel(
-                                            state = rememberCarouselState { distinctQuickPicks.size },
-                                            maxItemWidth = heroMaxWidth,
-                                            itemSpacing = 10.dp,
-                                            contentPadding = PaddingValues(horizontal = 16.dp),
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .height(340.dp)
+                                                .padding(horizontal = 16.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        val carouselState = rememberCarouselState { distinctQuickPicks.size }
+                                        HorizontalMultiBrowseCarousel(
+                                            state = carouselState,
+                                            preferredItemWidth = 280.dp,
+                                            itemSpacing = 14.dp,
                                             modifier =
                                                 Modifier
                                                     .fillMaxWidth()
-                                                    .height(heroHeight),
+                                                    .height(320.dp),
                                         ) { index ->
                                             val originalSong = distinctQuickPicks[index]
                                             val song by database
@@ -157,5 +143,6 @@ HS.write_text(before + replacement + after)
 out = HS.read_text()
 print("patched", HS.stat().st_size)
 assert "Speed Dial removed" in out
-assert "HorizontalCenteredHeroCarousel" in out
-print("ok")
+assert "HorizontalMultiBrowseCarousel" in out
+assert "LazyHorizontalGrid" not in out[out.find("quick_picks_list"):out.find("FromTheCommunity")]
+print("ok — Quick Picks is carousel, not LazyHorizontalGrid")
