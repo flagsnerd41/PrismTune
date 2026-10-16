@@ -27,7 +27,7 @@ if start < 0:
     sys.exit("quick_picks_list not found")
 end = text.find("                        HomeSection.FromTheCommunity -> {", start)
 if end < 0:
-    sys.exit("FromTheCommunity not found")
+    sys.exit("FromTheCommunity section not found after quick_picks_list")
 
 before, after = text[:start], text[end:]
 replacement = r'''                                item(key = "quick_picks_list") {
@@ -141,8 +141,14 @@ replacement = r'''                                item(key = "quick_picks_list")
 
 HS.write_text(before + replacement + after)
 out = HS.read_text()
-print("patched", len(out))
-assert "Speed Dial removed" in out
-assert "HorizontalMultiBrowseCarousel" in out[out.find("quick_picks_list") : out.find("FromTheCommunity")]
-assert "LazyHorizontalGrid" not in out[out.find("quick_picks_list") : out.find("FromTheCommunity")]
+qp = out.find("quick_picks_list")
+fc = out.find("HomeSection.FromTheCommunity -> {", qp)
+section = out[qp:fc]
+print("patched", len(out), "section", len(section))
+if "HorizontalMultiBrowseCarousel" not in section:
+    sys.exit("carousel not in quick picks section")
+if "LazyHorizontalGrid" in section:
+    sys.exit("old grid still in quick picks section")
+if "Speed Dial removed" not in out:
+    sys.exit("speed dial not removed")
 print("ok")
