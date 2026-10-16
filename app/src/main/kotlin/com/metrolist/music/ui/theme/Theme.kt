@@ -1,9 +1,9 @@
 /**
- * PrismTune / Metrolist Project
+ * PrismTune Project
  * Licensed under GPL-3.0 | See git history for contributors
  *
- * Theme tuned toward a modern dark + magenta accent look
- * (inspired by clean Material 3 + soft glass cards).
+ * Material 3 theme: deep purple surfaces + magenta accent
+ * (ArchiveTune-inspired glass / soft-card look).
  */
 
 package com.metrolist.music.ui.theme
@@ -28,9 +28,15 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-// Magenta / pink accent that matches the ArchiveTune-style screenshots
-// (play buttons, chips, selected nav)
+// Magenta / pink accent (play buttons, chips, selected nav)
 val DefaultThemeColor = Color(0xFFFF80AB)
+
+// Fixed dark surfaces for a consistent PrismTune look
+private val PrismBackground = Color(0xFF0B0710)
+private val PrismSurface = Color(0xFF14101A)
+private val PrismSurfaceContainer = Color(0xFF1C1524)
+private val PrismSurfaceHigh = Color(0xFF241C2E)
+private val PrismSurfaceHighest = Color(0xFF2C2338)
 
 @Composable
 fun MetrolistTheme(
@@ -41,37 +47,41 @@ fun MetrolistTheme(
 ) {
     val context = LocalContext.current
 
-    // Prefer the custom magenta seed even on Android S+
-    // so the app keeps a consistent PrismTune / ArchiveTune identity.
+    // Keep PrismTune identity; do not follow system dynamic color
     val useSystemDynamicColor = false
 
-    val baseColorScheme = if (useSystemDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    } else {
-        rememberDynamicColorScheme(
-            seedColor = themeColor,
-            isDark = darkTheme,
-            specVersion = ColorSpec.SpecVersion.SPEC_2025,
-            style = PaletteStyle.TonalSpot,
-        )
-    }
-
-    val colorScheme = remember(baseColorScheme, pureBlack, darkTheme) {
-        if (darkTheme && pureBlack) {
-            baseColorScheme.pureBlack(true)
-        } else if (darkTheme) {
-            // Slightly deeper surfaces for the soft-card look
-            baseColorScheme.copy(
-                background = Color(0xFF0F0A12),
-                surface = Color(0xFF16101C),
-                surfaceContainer = Color(0xFF1E1626),
-                surfaceContainerHigh = Color(0xFF251C30),
-                surfaceContainerHighest = Color(0xFF2C2238),
-            )
+    val baseColorScheme =
+        if (useSystemDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         } else {
-            baseColorScheme
+            rememberDynamicColorScheme(
+                seedColor = themeColor,
+                isDark = darkTheme,
+                specVersion = ColorSpec.SpecVersion.SPEC_2025,
+                style = PaletteStyle.TonalSpot,
+            )
         }
-    }
+
+    val colorScheme =
+        remember(baseColorScheme, pureBlack, darkTheme) {
+            when {
+                darkTheme && pureBlack -> baseColorScheme.pureBlack(true)
+                darkTheme ->
+                    baseColorScheme.copy(
+                        background = PrismBackground,
+                        surface = PrismSurface,
+                        surfaceContainerLowest = PrismBackground,
+                        surfaceContainerLow = PrismSurface,
+                        surfaceContainer = PrismSurfaceContainer,
+                        surfaceContainerHigh = PrismSurfaceHigh,
+                        surfaceContainerHighest = PrismSurfaceHighest,
+                        primary = DefaultThemeColor,
+                        secondary = Color(0xFFE91E8C),
+                        tertiary = Color(0xFFCE93D8),
+                    )
+                else -> baseColorScheme
+            }
+        }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -79,34 +89,43 @@ fun MetrolistTheme(
     )
 }
 
-fun Bitmap.extractThemeColor(): Color = Color(
-    Palette.from(this)
-        .maximumColorCount(8)
-        .generate()
-        .rankedColors(1, DefaultThemeColor.toArgb())
-        .first()
-)
+fun Bitmap.extractThemeColor(): Color =
+    Color(
+        Palette
+            .from(this)
+            .maximumColorCount(8)
+            .generate()
+            .rankedColors(1, DefaultThemeColor.toArgb())
+            .first(),
+    )
 
 internal fun Palette.rankedColors(
     desiredColorCount: Int,
     fallbackColor: Int,
-): List<Int> = Score.score(
-    swatches.associate { it.rgb to it.population },
-    desiredColorCount,
-    fallbackColor,
-    true,
-)
+): List<Int> =
+    Score.score(
+        swatches.associate { it.rgb to it.population },
+        desiredColorCount,
+        fallbackColor,
+        true,
+    )
 
 fun ColorScheme.pureBlack(apply: Boolean) =
-    if (apply) copy(
-        surface = Color.Black,
-        background = Color.Black,
-        surfaceContainer = Color(0xFF121212),
-        surfaceContainerHigh = Color(0xFF1A1A1A),
-        surfaceContainerHighest = Color(0xFF222222),
-    ) else this
+    if (apply) {
+        copy(
+            surface = Color.Black,
+            background = Color.Black,
+            surfaceContainer = Color(0xFF121212),
+            surfaceContainerHigh = Color(0xFF1A1A1A),
+            surfaceContainerHighest = Color(0xFF222222),
+        )
+    } else {
+        this
+    }
 
-val ColorSaver = object : Saver<Color, Int> {
-    override fun restore(value: Int): Color = Color(value)
-    override fun SaverScope.save(value: Color): Int = value.toArgb()
-}
+val ColorSaver =
+    object : Saver<Color, Int> {
+        override fun restore(value: Int): Color = Color(value)
+
+        override fun SaverScope.save(value: Color): Int = value.toArgb()
+    }
