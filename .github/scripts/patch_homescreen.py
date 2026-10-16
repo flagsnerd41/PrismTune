@@ -11,7 +11,6 @@ raw = subprocess.check_output(["git", "show", f"{GOOD}:{HS}"], text=True)
 HS.write_text(raw)
 text = HS.read_text()
 
-# Hide Speed Dial section registration
 old = "            if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
 new = (
     "            // Speed Dial removed — ArchiveTune Quick Picks hero carousel instead\n"
@@ -21,20 +20,17 @@ if old not in text:
     sys.exit("speed dial add line not found")
 text = text.replace(old, new, 1)
 
-# Ensure carousel imports exist (Material3 experimental carousel)
+# Only add carousel imports if missing (do NOT re-add ExperimentalMaterial3Api)
 if "HorizontalCenteredHeroCarousel" not in text:
-    # Add imports near other foundation/material3 imports
     anchor = "import androidx.compose.foundation.lazy.LazyRow\n"
     inject = (
         anchor
         + "import androidx.compose.material3.carousel.HorizontalCenteredHeroCarousel\n"
         + "import androidx.compose.material3.carousel.rememberCarouselState\n"
-        + "import androidx.compose.material3.ExperimentalMaterial3Api\n"
     )
-    if anchor in text:
-        text = text.replace(anchor, inject, 1)
-    else:
+    if anchor not in text:
         sys.exit("LazyRow import not found for carousel inject")
+    text = text.replace(anchor, inject, 1)
 
 start = text.find('                                item(key = "quick_picks_list") {')
 if start < 0:
@@ -45,8 +41,6 @@ if end < 0:
 
 before, after = text[:start], text[end:]
 
-# Adapted from ArchiveTune HomeScreenComponents.QuickPicksSection CARD mode
-# (rukamori/ArchiveTune, GPL-3.0) — hero carousel with gradient + title overlay
 replacement = r'''                                item(key = "quick_picks_list") {
                                     // ArchiveTune-style Quick Picks hero carousel
                                     val distinctQuickPicks = quickPicks.distinctBy { it.id }
@@ -164,3 +158,4 @@ HS.write_text(before + replacement + after)
 print("patched", HS.stat().st_size)
 assert "Speed Dial removed" in HS.read_text()
 assert "HorizontalCenteredHeroCarousel" in HS.read_text()
+assert HS.read_text().count("ExperimentalMaterial3Api") <= 2
