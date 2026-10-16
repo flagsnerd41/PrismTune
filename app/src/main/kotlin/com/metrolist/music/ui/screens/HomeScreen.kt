@@ -1216,9 +1216,6 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .align(Alignment.TopCenter),
             ) {
-                item(key = "prism_header") {
-                    PrismHeader()
-                }
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
