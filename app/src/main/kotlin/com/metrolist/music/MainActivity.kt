@@ -21,6 +21,10 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.Brush
+import com.metrolist.music.ui.component.WelcomeSplash
+import com.metrolist.music.ui.component.WelcomeSplashState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -710,11 +714,22 @@ class MainActivity : FragmentActivity() {
             }
 
             CompositionLocalProvider(LocalDensity provides scaledDensity) {
+            val bgTint by animateColorAsState(MaterialTheme.colorScheme.primary, tween(900), label = "bgTint")
+            val bgTint2 by animateColorAsState(MaterialTheme.colorScheme.tertiary, tween(900), label = "bgTint2")
             BoxWithConstraints(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface),
+                        .background(if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    bgTint.copy(alpha = if (pureBlack) 0f else 0.32f),
+                                    bgTint2.copy(alpha = if (pureBlack) 0f else 0.14f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                        ),
             ) {
                 val density = LocalDensity.current
                 val configuration = LocalWindowInfo.current
@@ -1051,6 +1066,7 @@ class MainActivity : FragmentActivity() {
                     }
 
                     Scaffold(
+                        containerColor = Color.Transparent,
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         topBar = {
                             AnimatedVisibility(
@@ -1411,6 +1427,16 @@ class MainActivity : FragmentActivity() {
                         state = LocalBottomSheetPageState.current,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
+
+                    if (!WelcomeSplashState.shown) {
+                        var splashVisible by remember { mutableStateOf(true) }
+                        if (splashVisible) {
+                            WelcomeSplash(onFinished = {
+                                WelcomeSplashState.shown = true
+                                splashVisible = false
+                            })
+                        }
+                    }
 
                     if (showAccountDialog) {
                         AccountSettingsDialog(

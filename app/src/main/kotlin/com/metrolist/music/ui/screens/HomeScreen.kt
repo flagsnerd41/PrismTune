@@ -6,6 +6,7 @@
 package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
+import com.metrolist.music.ui.component.PrismHeader
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.animation.AnimatedVisibility
@@ -1215,6 +1216,9 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .align(Alignment.TopCenter),
             ) {
+                item(key = "prism_header") {
+                    PrismHeader()
+                }
                 item {
                     ChipsRow(
                         chips = homePage?.chips?.map { it to it.title } ?: emptyList(),
