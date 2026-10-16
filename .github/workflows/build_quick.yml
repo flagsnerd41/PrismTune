@@ -22,10 +22,15 @@ jobs:
           ref: rebrand/prismtune
           fetch-depth: 0
 
-      - name: Polish MiniPlayer + restore full AboutScreen
+      - name: Restore HomeScreen + polish MiniPlayer/About
         run: |
           set -e
-          # Restore full AboutScreen from last good full revision, then retarget links
+          HS=app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt
+          # Branch file is corrupted; always restore known-good full source
+          git show 1c18498f9ad70b914e460ee8ae95dbba06ab8bc6:"$HS" > "$HS"
+          wc -c "$HS"
+          test "$(wc -c < "$HS")" -gt 100000
+
           ABOUT=app/src/main/kotlin/com/metrolist/music/ui/screens/settings/AboutScreen.kt
           git show 25fbc45eccc81f60223be40ff96126dc2aae7c87:"$ABOUT" > "$ABOUT"
           sed -i \
@@ -33,15 +38,15 @@ jobs:
             -e 's|https://github.com/MetrolistGroup/Metrolist|https://github.com/flagsnerd41/PrismTune2|g' \
             "$ABOUT"
 
-          # Default mini player to BLUR + slightly softer glass overlay
           MP=app/src/main/kotlin/com/metrolist/music/ui/player/MiniPlayer.kt
           sed -i \
             -e 's/defaultValue = MiniPlayerBackgroundStyle.DEFAULT/defaultValue = MiniPlayerBackgroundStyle.BLUR/' \
             -e 's/Color.Black.copy(alpha = 0.45f)/Color.Black.copy(alpha = 0.32f)/' \
             "$MP"
 
+          echo "HomeScreen bytes: $(wc -c < "$HS")"
+          grep -n "PrismTune2" "$ABOUT" | head -3
           grep -n "MiniPlayerBackgroundStyle.BLUR" "$MP" | head -3
-          grep -n "PrismTune2" "$ABOUT" | head -5
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -91,7 +96,6 @@ jobs:
           test -n "$APK"
           cp "$APK" "$OUT/PrismTune-release.apk"
           ls -la "$OUT"
-          unzip -t "$OUT/PrismTune-release.apk" | tail -3
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
