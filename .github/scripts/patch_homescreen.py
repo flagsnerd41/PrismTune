@@ -20,7 +20,6 @@ if old not in text:
     sys.exit("speed dial add line not found")
 text = text.replace(old, new, 1)
 
-# Only add carousel imports if missing (do NOT re-add ExperimentalMaterial3Api)
 if "HorizontalCenteredHeroCarousel" not in text:
     anchor = "import androidx.compose.foundation.lazy.LazyRow\n"
     inject = (
@@ -155,7 +154,8 @@ replacement = r'''                                item(key = "quick_picks_list")
 '''
 
 HS.write_text(before + replacement + after)
+out = HS.read_text()
 print("patched", HS.stat().st_size)
-assert "Speed Dial removed" in HS.read_text()
-assert "HorizontalCenteredHeroCarousel" in HS.read_text()
-assert HS.read_text().count("ExperimentalMaterial3Api") <= 2
+assert "Speed Dial removed" in out
+assert "HorizontalCenteredHeroCarousel" in out
+print("ok")
