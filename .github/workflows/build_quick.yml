@@ -22,14 +22,12 @@ jobs:
           ref: rebrand/prismtune
           fetch-depth: 0
 
-      - name: Restore HomeScreen + polish MiniPlayer/About
+      - name: Restore HomeScreen + UI polish
         run: |
           set -e
-          HS=app/src/main/kotlin/com/metrolist/music/ui/screens/HomeScreen.kt
-          # Branch file is corrupted; always restore known-good full source
-          git show 1c18498f9ad70b914e460ee8ae95dbba06ab8bc6:"$HS" > "$HS"
-          wc -c "$HS"
-          test "$(wc -c < "$HS")" -gt 100000
+          git fetch origin main
+          git show origin/main:.github/scripts/patch_homescreen.py > /tmp/patch_homescreen.py
+          python3 /tmp/patch_homescreen.py
 
           ABOUT=app/src/main/kotlin/com/metrolist/music/ui/screens/settings/AboutScreen.kt
           git show 25fbc45eccc81f60223be40ff96126dc2aae7c87:"$ABOUT" > "$ABOUT"
@@ -44,9 +42,7 @@ jobs:
             -e 's/Color.Black.copy(alpha = 0.45f)/Color.Black.copy(alpha = 0.32f)/' \
             "$MP"
 
-          echo "HomeScreen bytes: $(wc -c < "$HS")"
-          grep -n "PrismTune2" "$ABOUT" | head -3
-          grep -n "MiniPlayerBackgroundStyle.BLUR" "$MP" | head -3
+          echo "OK polish"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4

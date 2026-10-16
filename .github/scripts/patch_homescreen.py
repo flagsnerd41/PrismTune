@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hide Speed Dial; Quick Picks as big carousel cards (same API as Daily Discover)."""
+"""Hide Speed Dial; Quick Picks = big HorizontalMultiBrowseCarousel (same as Daily Discover)."""
 from pathlib import Path
 import subprocess
 import sys
@@ -10,14 +10,16 @@ GOOD = "1c18498f9ad70b914e460ee8ae95dbba06ab8bc6"
 raw = subprocess.check_output(["git", "show", f"{GOOD}:{HS}"], text=True)
 HS.write_text(raw)
 text = HS.read_text()
+if len(text) < 100000:
+    sys.exit(f"HomeScreen too small after restore: {len(text)}")
 
 old = "            if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
 new = (
-    "            // Speed Dial removed — big Quick Picks carousel instead\n"
+    "            // Speed Dial removed — ArchiveTune-style big Quick Picks\n"
     "            // if (!chipActive && speedDialItems.isNotEmpty()) list.add(HomeSection.SpeedDial)\n"
 )
 if old not in text:
-    sys.exit("speed dial add line not found")
+    sys.exit("speed dial line not found")
 text = text.replace(old, new, 1)
 
 start = text.find('                                item(key = "quick_picks_list") {')
@@ -28,10 +30,8 @@ if end < 0:
     sys.exit("FromTheCommunity not found")
 
 before, after = text[:start], text[end:]
-
-# Use HorizontalMultiBrowseCarousel — already used for Daily Discover in this file
 replacement = r'''                                item(key = "quick_picks_list") {
-                                    // Big ArchiveTune-style tiles using the same carousel as Daily Discover
+                                    // Big Quick Picks tiles (ArchiveTune-style), same carousel API as Daily Discover
                                     val distinctQuickPicks = quickPicks.distinctBy { it.id }
                                     Box(
                                         modifier =
@@ -141,8 +141,8 @@ replacement = r'''                                item(key = "quick_picks_list")
 
 HS.write_text(before + replacement + after)
 out = HS.read_text()
-print("patched", HS.stat().st_size)
+print("patched", len(out))
 assert "Speed Dial removed" in out
-assert "HorizontalMultiBrowseCarousel" in out
-assert "LazyHorizontalGrid" not in out[out.find("quick_picks_list"):out.find("FromTheCommunity")]
-print("ok — Quick Picks is carousel, not LazyHorizontalGrid")
+assert "HorizontalMultiBrowseCarousel" in out[out.find("quick_picks_list") : out.find("FromTheCommunity")]
+assert "LazyHorizontalGrid" not in out[out.find("quick_picks_list") : out.find("FromTheCommunity")]
+print("ok")
