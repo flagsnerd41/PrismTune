@@ -104,6 +104,7 @@ import com.metrolist.music.constants.UseNewMiniPlayerDesignKey
 import com.metrolist.music.constants.UseNewPlayerDesignKey
 import com.metrolist.music.ui.component.DefaultDialog
 import com.metrolist.music.ui.component.PrismNatureKey
+import com.metrolist.music.ui.component.PrismSeasonKey
 import com.metrolist.music.ui.component.PrismWindStrengthKey
 import com.metrolist.music.ui.component.EnumDialog
 import com.metrolist.music.ui.component.IconButton
@@ -1026,6 +1027,10 @@ fun AppearanceSettings(
         val (prismNature, onPrismNatureChange) = rememberPreference(PrismNatureKey, defaultValue = true)
         val (prismWind, onPrismWindChange) = rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
         var showPrismWindDialog by rememberSaveable { mutableStateOf(false) }
+        val (prismSeason, onPrismSeasonChange) = rememberPreference(PrismSeasonKey, defaultValue = 0)
+        var showPrismSeasonDialog by rememberSaveable { mutableStateOf(false) }
+        var showPrismPresetDialog by rememberSaveable { mutableStateOf(false) }
+        val (_, onSelectedThemeColorChange) = rememberPreference(SelectedThemeColorKey, defaultValue = DefaultThemeColor.toArgb())
 
         Material3SettingsGroup(
             title = "PrismTune effects",
@@ -1055,6 +1060,29 @@ fun AppearanceSettings(
                         title = { Text("Wind strength") },
                         description = { Text("${(prismWind * 100).roundToInt()}%") },
                         onClick = { showPrismWindDialog = true },
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.palette),
+                        title = { Text("Season effect") },
+                        description = {
+                            Text(
+                                when (prismSeason) {
+                                    1 -> "Autumn leaves"
+                                    2 -> "Winter snow"
+                                    3 -> "Spring petals"
+                                    4 -> "Summer fireflies"
+                                    5 -> "Rain"
+                                    else -> "Auto (by month)"
+                                },
+                            )
+                        },
+                        onClick = { showPrismSeasonDialog = true },
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.palette),
+                        title = { Text("Theme presets") },
+                        description = { Text("Autumn Cabin, Midnight Forest, Neon City, Cherry Blossom") },
+                        onClick = { showPrismPresetDialog = true },
                     ),
                 ),
         )
@@ -1106,6 +1134,84 @@ fun AppearanceSettings(
         }
 
         Spacer(modifier = Modifier.height(27.dp))
+
+        if (showPrismSeasonDialog) {
+            DefaultDialog(
+                onDismiss = { showPrismSeasonDialog = false },
+                buttons = {
+                    TextButton(onClick = { showPrismSeasonDialog = false }) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                },
+            ) {
+                Column {
+                    listOf(
+                        0 to "Auto (by month)",
+                        1 to "Autumn leaves",
+                        2 to "Winter snow",
+                        3 to "Spring petals",
+                        4 to "Summer fireflies",
+                        5 to "Rain",
+                    ).forEach { (value, label) ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onPrismSeasonChange(value)
+                                        showPrismSeasonDialog = false
+                                    }.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color =
+                                    if (prismSeason == value) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showPrismPresetDialog) {
+            DefaultDialog(
+                onDismiss = { showPrismPresetDialog = false },
+                buttons = {
+                    TextButton(onClick = { showPrismPresetDialog = false }) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                },
+            ) {
+                Column {
+                    listOf(
+                        "Autumn Cabin" to 0xFFC2611F.toInt(),
+                        "Midnight Forest" to 0xFF2E7D5B.toInt(),
+                        "Neon City" to 0xFFB026FF.toInt(),
+                        "Cherry Blossom" to 0xFFF48FB1.toInt(),
+                        "Back to dynamic (follows the song)" to DefaultThemeColor.toArgb(),
+                    ).forEach { (label, colorInt) ->
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSelectedThemeColorChange(colorInt)
+                                        showPrismPresetDialog = false
+                                    }.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(text = label, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+        }
 
         val (pureBlackMiniPlayer, onPureBlackMiniPlayerChange) =
             rememberPreference(

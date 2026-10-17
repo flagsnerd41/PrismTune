@@ -79,6 +79,7 @@ import com.metrolist.music.extensions.normalizeForSearch
 import com.metrolist.music.extensions.toMediaItem
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.ChipsRow
+import com.metrolist.music.ui.component.PrismLibraryHeader
 import com.metrolist.music.ui.component.DefaultDialog
 import com.metrolist.music.ui.component.HideOnScrollFAB
 import com.metrolist.music.ui.component.LibrarySearchEmptyPlaceholder
@@ -328,6 +329,9 @@ fun LibrarySongsScreen(
             state = lazyListState,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
         ) {
+            item(key = "prism_lib_header", contentType = CONTENT_TYPE_HEADER) {
+                PrismLibraryHeader()
+            }
             item(
                 key = "filter",
                 contentType = CONTENT_TYPE_HEADER,

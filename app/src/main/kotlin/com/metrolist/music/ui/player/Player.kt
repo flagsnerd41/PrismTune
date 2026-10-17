@@ -916,7 +916,7 @@ fun BottomSheetPlayer(
                         PlayerBackgroundStyle.DEFAULT
                     }
                 }
-                PrismNature(active = backgroundAlpha > 0.02f, modifier = Modifier.fillMaxSize().alpha(backgroundAlpha))
+                PrismNature(active = backgroundAlpha > 0.02f, playing = isPlaying, modifier = Modifier.fillMaxSize().alpha(backgroundAlpha))
             }
         },
         onDismiss =
