@@ -6,6 +6,7 @@
 package com.metrolist.music.ui.screens
 
 import androidx.activity.compose.BackHandler
+import com.metrolist.music.ui.component.PrismHomeLights
 import com.metrolist.music.ui.component.PrismHeader
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.layout.widthIn
@@ -1207,9 +1208,12 @@ fun HomeScreen(
                         },
             )
 
+            PrismHomeLights(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter))
+
             LazyColumn(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier =
                     Modifier
                         .widthIn(max = 1200.dp)

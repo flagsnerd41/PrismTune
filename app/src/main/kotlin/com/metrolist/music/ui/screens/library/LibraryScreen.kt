@@ -6,6 +6,8 @@
 package com.metrolist.music.ui.screens.library
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import com.metrolist.music.ui.component.PrismLibraryHeader
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -30,7 +32,7 @@ fun LibraryScreen() {
     var libraryViewType by rememberEnumPreference(AlbumViewTypeKey, LibraryViewType.GRID)
     var playlistViewType by rememberEnumPreference(PlaylistViewTypeKey, LibraryViewType.GRID)
 
-    val filterContent = @Composable {
+    val chipsContent = @Composable {
         Row {
             ChipsRow(
                 chips = listOf(
@@ -46,6 +48,13 @@ fun LibraryScreen() {
                 },
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+
+    val filterContent = @Composable {
+        Column {
+            PrismLibraryHeader()
+            chipsContent()
         }
     }
 

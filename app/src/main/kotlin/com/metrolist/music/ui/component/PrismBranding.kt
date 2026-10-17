@@ -5,6 +5,11 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.layout.Column
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import com.metrolist.music.utils.rememberPreference
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.withFrameNanos
@@ -235,6 +240,9 @@ fun PrismTitleBanner(modifier: Modifier = Modifier) {
     }
 }
 
+val PrismNatureKey = booleanPreferencesKey("prismNatureEnabled")
+val PrismWindStrengthKey = floatPreferencesKey("prismWindStrength")
+
 private class PrismLeaf(
     val xFrac: Float,
     val yPhase: Float,
@@ -274,6 +282,12 @@ private val PrismStrands =
     listOf(
         PrismStrand(0.040f, 0.050f, 0.060f, 12, 0f),
         PrismStrand(0.022f, 0.030f, 0.035f, 9, 1f),
+    )
+
+private val PrismHomeStrands =
+    listOf(
+        PrismStrand(0.05f, 0.08f, 0.22f, 10, 0f),
+        PrismStrand(0.02f, 0.03f, 0.12f, 7, 1f),
     )
 
 private fun buildPrismLeaves(): List<PrismLeaf> {
@@ -318,6 +332,7 @@ private fun DrawScope.drawPrismLeaves(
     h: Float,
     d: Float,
     wind: Float,
+    tint: Color,
 ) {
     val margin = 40f * d
     val travel = h + margin * 2f
@@ -335,7 +350,8 @@ private fun DrawScope.drawPrismLeaves(
         val flip = cos(t * leaf.flipFreq + leaf.flipPhase)
         val sx = max(0.22f, abs(flip))
         val shade = (0.78f + 0.22f * flip).coerceIn(0.55f, 1f)
-        val body = lerp(Color.Black, leaf.color, shade).copy(alpha = 0.55f + 0.4f * leaf.depth)
+        val shaded = lerp(Color.Black, leaf.color, shade)
+        val body = lerp(shaded, tint, 0.25f).copy(alpha = 0.55f + 0.4f * leaf.depth)
         val vein = Color.Black.copy(alpha = 0.28f)
         val sizePx = leaf.sizeDp * d
         withTransform({
@@ -350,16 +366,27 @@ private fun DrawScope.drawPrismLeaves(
 }
 
 private fun DrawScope.drawPrismFairyLights(
+    strands: List<PrismStrand>,
     t: Float,
     w: Float,
     h: Float,
     d: Float,
     wind: Float,
-    tint: Color,
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
 ) {
     val warm = Color(0xFFFFE7B0)
     val wireColor = Color(0xFF2B2118).copy(alpha = 0.75f)
-    for (s in PrismStrands) {
+    val palette =
+        listOf(
+            warm,
+            lerp(primary, Color.White, 0.45f),
+            warm,
+            lerp(tertiary, Color.White, 0.45f),
+            lerp(secondary, Color.White, 0.40f),
+        )
+    for (s in strands) {
         val x0 = -0.04f * w
         val x2 = 1.04f * w
         val y0 = s.y0 * h
@@ -395,7 +422,7 @@ private fun DrawScope.drawPrismFairyLights(
             val flick = 0.82f + 0.18f * sin(t * (2.1f + (i % 3) * 0.8f) + phase)
             val dip = 1f - 0.5f * gust * (0.5f + 0.5f * sin(t * 14f + phase * 2.3f))
             val b = (flick * dip).coerceIn(0.3f, 1f)
-            val bulb = if (i % 2 == 0) warm else lerp(warm, tint, 0.4f)
+            val bulb = palette[(i + s.seed.toInt()) % palette.size]
             val center = Offset(bx, by)
             drawCircle(
                 brush =
@@ -418,24 +445,109 @@ fun PrismNature(
     active: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val enabled by rememberPreference(PrismNatureKey, defaultValue = true)
+    val windStrength by rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
+    val running = active && enabled
     val timeNanos = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(active) {
-        if (active) {
+    LaunchedEffect(running) {
+        if (running) {
             val start = withFrameNanos { it }
             while (true) {
                 withFrameNanos { timeNanos.longValue = it - start }
             }
         }
     }
-    val tint = MaterialTheme.colorScheme.primary
+    val primary by animateColorAsState(MaterialTheme.colorScheme.primary, tween(900), label = "natureP")
+    val secondary by animateColorAsState(MaterialTheme.colorScheme.secondary, tween(900), label = "natureS")
+    val tertiary by animateColorAsState(MaterialTheme.colorScheme.tertiary, tween(900), label = "natureT")
     val leaves = remember { buildPrismLeaves() }
 
     Canvas(modifier = modifier) {
-        if (!active) return@Canvas
+        if (!running) return@Canvas
         val t = timeNanos.longValue / 1_000_000_000f
         val d = 1.dp.toPx()
-        val wind = prismWind(t)
-        drawPrismLeaves(leaves, t, size.width, size.height, d, wind)
-        drawPrismFairyLights(t, size.width, size.height, d, wind, tint)
+        val wind = prismWind(t) * windStrength
+        drawPrismLeaves(leaves, t, size.width, size.height, d, wind, primary)
+        drawPrismFairyLights(PrismStrands, t, size.width, size.height, d, wind, primary, secondary, tertiary)
+    }
+}
+
+@Composable
+fun PrismHomeLights(modifier: Modifier = Modifier) {
+    val enabled by rememberPreference(PrismNatureKey, defaultValue = true)
+    val windStrength by rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
+    val timeNanos = remember { mutableLongStateOf(0L) }
+    LaunchedEffect(enabled) {
+        if (enabled) {
+            val start = withFrameNanos { it }
+            while (true) {
+                withFrameNanos { timeNanos.longValue = it - start }
+            }
+        }
+    }
+    val primary by animateColorAsState(MaterialTheme.colorScheme.primary, tween(900), label = "homeP")
+    val secondary by animateColorAsState(MaterialTheme.colorScheme.secondary, tween(900), label = "homeS")
+    val tertiary by animateColorAsState(MaterialTheme.colorScheme.tertiary, tween(900), label = "homeT")
+
+    Canvas(modifier = modifier) {
+        if (!enabled) return@Canvas
+        val t = timeNanos.longValue / 1_000_000_000f
+        val d = 1.dp.toPx()
+        val wind = prismWind(t) * windStrength
+        drawPrismFairyLights(PrismHomeStrands, t, size.width, size.height, d, wind, primary, secondary, tertiary)
+    }
+}
+
+@Composable
+fun PrismLibraryHeader(modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
+    val tertiary = MaterialTheme.colorScheme.tertiary
+    val pulse by rememberInfiniteTransition(label = "libGlow").animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "libGlowPulse",
+    )
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .height(84.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            primary.copy(alpha = 0.50f),
+                            secondary.copy(alpha = 0.35f),
+                            tertiary.copy(alpha = 0.50f),
+                        ),
+                    ),
+                ).drawBehind {
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.14f * pulse),
+                        radius = size.height * 1.1f,
+                        center = Offset(size.width * 0.9f, 0f),
+                    )
+                }.padding(horizontal = 20.dp),
+    ) {
+        Column {
+            Text(
+                text = "Your Library",
+                color = Color.White,
+                style =
+                    MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        shadow = Shadow(color = Color.White.copy(alpha = 0.8f * pulse), offset = Offset.Zero, blurRadius = 22f),
+                    ),
+            )
+            Text(
+                text = "Playlists | Songs | Albums | Artists",
+                color = Color.White.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
     }
 }

@@ -103,6 +103,8 @@ import com.metrolist.music.constants.SwipeToSongKey
 import com.metrolist.music.constants.UseNewMiniPlayerDesignKey
 import com.metrolist.music.constants.UseNewPlayerDesignKey
 import com.metrolist.music.ui.component.DefaultDialog
+import com.metrolist.music.ui.component.PrismNatureKey
+import com.metrolist.music.ui.component.PrismWindStrengthKey
 import com.metrolist.music.ui.component.EnumDialog
 import com.metrolist.music.ui.component.IconButton
 import com.metrolist.music.ui.component.Material3SettingsGroup
@@ -1018,6 +1020,90 @@ fun AppearanceSettings(
                     )
                 },
         )
+
+        Spacer(modifier = Modifier.height(27.dp))
+
+        val (prismNature, onPrismNatureChange) = rememberPreference(PrismNatureKey, defaultValue = true)
+        val (prismWind, onPrismWindChange) = rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
+        var showPrismWindDialog by rememberSaveable { mutableStateOf(false) }
+
+        Material3SettingsGroup(
+            title = "PrismTune effects",
+            items =
+                listOf(
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.palette),
+                        title = { Text("Falling leaves and fairy lights") },
+                        description = { Text("Animated leaves and lights on the player and Home") },
+                        trailingContent = {
+                            Switch(
+                                checked = prismNature,
+                                onCheckedChange = onPrismNatureChange,
+                                thumbContent = {
+                                    Icon(
+                                        painter = painterResource(id = if (prismNature) R.drawable.check else R.drawable.close),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                                    )
+                                },
+                            )
+                        },
+                        onClick = { onPrismNatureChange(!prismNature) },
+                    ),
+                    Material3SettingsItem(
+                        icon = painterResource(R.drawable.tune),
+                        title = { Text("Wind strength") },
+                        description = { Text("${(prismWind * 100).roundToInt()}%") },
+                        onClick = { showPrismWindDialog = true },
+                    ),
+                ),
+        )
+
+        if (showPrismWindDialog) {
+            var tempWind by remember { mutableFloatStateOf(prismWind) }
+            DefaultDialog(
+                onDismiss = { showPrismWindDialog = false },
+                buttons = {
+                    TextButton(onClick = { tempWind = 1f }) {
+                        Text(stringResource(R.string.reset))
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showPrismWindDialog = false }) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                    TextButton(
+                        onClick = {
+                            onPrismWindChange(tempWind)
+                            showPrismWindDialog = false
+                        },
+                    ) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                },
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Text(
+                        text = "Wind strength",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                    Text(
+                        text = "${(tempWind * 100).roundToInt()}%",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                    )
+                    Slider(
+                        value = tempWind,
+                        onValueChange = { tempWind = it },
+                        valueRange = 0f..2f,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(27.dp))
 
