@@ -5,6 +5,9 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.animation.core.Animatable
+import kotlin.math.exp
+import kotlin.math.pow
+import kotlin.math.sqrt
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -82,6 +85,7 @@ fun WelcomeSplash(
     val overlayAlpha = remember { Animatable(1f) }
     val greeting = remember { prismGreeting() }
     val leaves = remember { buildPrismLeaves(14, 9f, 18f, PrismLeafColors, 1f) }
+    val strands = remember { buildPrismStrands() }
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
     val tertiary = MaterialTheme.colorScheme.tertiary
@@ -121,7 +125,7 @@ fun WelcomeSplash(
             val leafFade = ((t - 0.5f) / 0.8f).coerceIn(0f, 1f)
             drawPrismLeaves(leaves, t, size.width, size.height, d, wind, primary, leafFade)
             drawPrismFairyLights(
-                PrismStrands,
+                strands,
                 t,
                 size.width,
                 size.height,
@@ -319,22 +323,6 @@ val PrismNatureKey = booleanPreferencesKey("prismNatureEnabled")
 val PrismWindStrengthKey = floatPreferencesKey("prismWindStrength")
 val PrismSeasonKey = intPreferencesKey("prismSeason")
 
-private class PrismLeaf(
-    val xFrac: Float,
-    val yPhase: Float,
-    val speed: Float,
-    val sizeDp: Float,
-    val swayAmpDp: Float,
-    val swayFreq: Float,
-    val swayPhase: Float,
-    val spin: Float,
-    val spinPhase: Float,
-    val flipFreq: Float,
-    val flipPhase: Float,
-    val color: Color,
-    val depth: Float,
-)
-
 private class PrismDot(
     val x: Float,
     val y: Float,
@@ -343,14 +331,6 @@ private class PrismDot(
     val amp: Float,
     val freq: Float,
     val phase: Float,
-)
-
-private class PrismStrand(
-    val y0: Float,
-    val y1: Float,
-    val sag: Float,
-    val count: Int,
-    val seed: Float,
 )
 
 private val PrismLeafColors =
@@ -371,46 +351,6 @@ private val PrismPetalColors =
         Color(0xFFFFCDD2),
         Color(0xFFF06292),
     )
-
-private val PrismStrands =
-    listOf(
-        PrismStrand(0.040f, 0.050f, 0.060f, 12, 0f),
-        PrismStrand(0.022f, 0.030f, 0.035f, 9, 1f),
-    )
-
-private val PrismHomeStrands =
-    listOf(
-        PrismStrand(0.05f, 0.08f, 0.22f, 10, 0f),
-        PrismStrand(0.02f, 0.03f, 0.12f, 7, 1f),
-    )
-
-private fun buildPrismLeaves(
-    count: Int,
-    minSize: Float,
-    maxSize: Float,
-    colors: List<Color>,
-    speedMul: Float,
-): List<PrismLeaf> {
-    val r = Random(11 + count)
-    return List(count) {
-        val depth = r.nextFloat()
-        PrismLeaf(
-            xFrac = r.nextFloat(),
-            yPhase = r.nextFloat(),
-            speed = (0.045f + 0.05f * r.nextFloat()) * speedMul,
-            sizeDp = minSize + (maxSize - minSize) * depth,
-            swayAmpDp = 14f + 26f * r.nextFloat(),
-            swayFreq = 0.6f + 0.9f * r.nextFloat(),
-            swayPhase = 6.28f * r.nextFloat(),
-            spin = (r.nextFloat() - 0.5f) * 90f,
-            spinPhase = 360f * r.nextFloat(),
-            flipFreq = 0.8f + 1.6f * r.nextFloat(),
-            flipPhase = 6.28f * r.nextFloat(),
-            color = colors[r.nextInt(colors.size)],
-            depth = depth,
-        )
-    }
-}
 
 private fun buildPrismDots(
     seed: Int,
@@ -435,24 +375,515 @@ private fun buildPrismDots(
     }
 }
 
+private const val PRISM_PI = 3.1415927f
+private const val PRISM_LEAF_SEGMENTS = 6
+private const val PRISM_ROPE_N = 26
+
+private class PrismLeaf(
+    val xFrac: Float,
+    val yFrac0: Float,
+    val sizeDp: Float,
+    val color: Color,
+    val depth: Float,
+    val fall: Float,
+    val glide: Float,
+    val flutterFreq: Float,
+    val tiltMax: Float,
+    val yawSpeed: Float,
+    val curl: Float,
+    val widthK: Float,
+    val seed: Float,
+) {
+    var inited = false
+    var lastT = -1f
+    var x = 0f
+    var y = 0f
+    var vx = 0f
+    var vy = 0f
+    var psi = seed * 6.28f
+    var yaw = seed * 31f
+    var pitch = 0f
+    var roll = 0f
+    val mx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val my = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val lx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val ly = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val rx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val ry = FloatArray(PRISM_LEAF_SEGMENTS + 1)
+    val stem = FloatArray(2)
+    val pathL = Path()
+    val pathR = Path()
+}
+
+private fun buildPrismLeaves(
+    count: Int,
+    minSize: Float,
+    maxSize: Float,
+    colors: List<Color>,
+    speedMul: Float,
+    widthK: Float = 1f,
+    curlBase: Float = 0.45f,
+): List<PrismLeaf> {
+    val r = Random(11 + count)
+    return List(count) {
+        val depth = r.nextFloat()
+        PrismLeaf(
+            xFrac = r.nextFloat(),
+            yFrac0 = r.nextFloat(),
+            sizeDp = minSize + (maxSize - minSize) * depth,
+            color = colors[r.nextInt(colors.size)],
+            depth = depth,
+            fall = (38f + 30f * r.nextFloat()) * speedMul,
+            glide = 0.6f + 0.8f * r.nextFloat(),
+            flutterFreq = 1.4f + 1.4f * r.nextFloat(),
+            tiltMax = 0.6f + 0.5f * r.nextFloat(),
+            yawSpeed = (r.nextFloat() - 0.5f) * 2.4f,
+            curl = curlBase * (0.7f + 0.6f * r.nextFloat()),
+            widthK = widthK * (0.85f + 0.3f * r.nextFloat()),
+            seed = r.nextFloat(),
+        )
+    }.sortedBy { it.depth }
+}
+
+private fun PrismLeaf.step(
+    t: Float,
+    w: Float,
+    h: Float,
+    d: Float,
+    wind: Float,
+) {
+    val margin = 40f * d
+    if (!inited) {
+        x = xFrac * w
+        y = yFrac0 * (h + 2f * margin) - margin
+        inited = true
+        lastT = t
+        return
+    }
+    var dt = t - lastT
+    lastT = t
+    if (dt <= 0f) return
+    if (dt > 0.05f) dt = 0.05f
+    psi += flutterFreq * dt
+    yaw += yawSpeed * dt
+    val s = sin(psi)
+    val tilt = tiltMax * s
+    val localWind = wind * (0.8f + 0.4f * sin(t * 0.9f + (x / (w + 1f)) * 4f + seed * 6.28f))
+    val parallax = 0.8f + 0.5f * depth
+    val targetVx = glide * sin(tilt) * 90f * d + localWind * 70f * d * (0.5f + 0.5f * depth)
+    val targetVy = fall * d * parallax * (0.55f + 0.9f * s * s)
+    val k = 1f - exp(-dt / 0.55f)
+    vx += (targetVx - vx) * k
+    vy += (targetVy - vy) * k
+    x += vx * dt
+    y += vy * dt
+    pitch = tilt
+    roll = 0.6f * tilt * cos(psi * 0.5f) + localWind * 0.25f
+    if (y > h + margin) {
+        y = -margin
+        x = (((seed * 811f + t * 37f) % 1f + 1f) % 1f) * w
+        vy = 0f
+    }
+    val span = w + 120f * d
+    var xx = (x + 60f * d) % span
+    if (xx < 0f) xx += span
+    x = xx - 60f * d
+}
+
+private fun prismLeafShade(
+    base: Color,
+    tint: Color,
+    nx: Float,
+    ny: Float,
+    nz: Float,
+    alpha: Float,
+): Color {
+    val sgn = if (nz >= 0f) 1f else -1f
+    val dd = (nx * -0.35f + ny * -0.6f + nz * 0.72f) * sgn
+    val diffuse = max(0f, dd)
+    val backlit = max(0f, -dd)
+    var c = lerp(base, tint, 0.12f)
+    if (sgn < 0f) c = lerp(c, Color(0xFFD8C79A), 0.30f)
+    var out = lerp(Color.Black, c, 0.30f + 0.70f * diffuse)
+    out = lerp(out, lerp(c, Color.White, 0.45f), (backlit * 0.7f).coerceIn(0f, 0.7f))
+    out = lerp(out, Color.White, diffuse * diffuse * diffuse * diffuse * 0.20f)
+    return out.copy(alpha = alpha)
+}
+
+private fun DrawScope.drawPrismLeaf3D(
+    leaf: PrismLeaf,
+    d: Float,
+    tint: Color,
+    alphaMul: Float,
+    veins: Boolean,
+) {
+    val size = leaf.sizeDp * d
+    val f = 260f * d
+    val angX = leaf.pitch + 0.35f
+    val angY = leaf.yaw
+    val angZ = leaf.roll
+    val cx = cos(angX)
+    val sx = sin(angX)
+    val cy = cos(angY)
+    val sy = sin(angY)
+    val cz = cos(angZ)
+    val sz = sin(angZ)
+    val r00 = cz * cy - sz * sx * sy
+    val r01 = -sz * cx
+    val r02 = cz * sy + sz * sx * cy
+    val r10 = sz * cy + cz * sx * sy
+    val r11 = cz * cx
+    val r12 = sz * sy - cz * sx * cy
+    val r20 = -cx * sy
+    val r21 = sx
+    val r22 = cx * cy
+
+    fun put(
+        ax: FloatArray,
+        ay: FloatArray,
+        i: Int,
+        lx: Float,
+        ly: Float,
+        lz: Float,
+    ) {
+        val px = (r00 * lx + r01 * ly + r02 * lz) * size
+        val py = (r10 * lx + r11 * ly + r12 * lz) * size
+        val pz = (r20 * lx + r21 * ly + r22 * lz) * size
+        val k = f / (f - pz)
+        ax[i] = leaf.x + px * k
+        ay[i] = leaf.y + py * k
+    }
+
+    val n = PRISM_LEAF_SEGMENTS
+    for (i in 0..n) {
+        val s = i.toFloat() / n
+        val yy = 1f - 2f * s
+        val wd = leaf.widthK * sin(PRISM_PI * s.pow(0.8f)) * 0.55f
+        val zm = -0.35f * s * s * leaf.curl
+        val ze = zm + leaf.curl * 4f * wd * wd
+        put(leaf.mx, leaf.my, i, 0f, yy, zm)
+        put(leaf.lx, leaf.ly, i, -wd, yy, ze)
+        put(leaf.rx, leaf.ry, i, wd, yy, ze)
+    }
+    put(leaf.stem, leaf.stem, 0, 0f, 1.28f, 0f)
+
+    val c = 2.2f * leaf.curl
+    val inv = 1f / sqrt(1f + c * c)
+    val nlx = c * inv
+    val nrx = -c * inv
+    val nz = inv
+    val alpha = (0.62f + 0.38f * leaf.depth) * alphaMul
+    val colL = prismLeafShade(leaf.color, tint, r00 * nlx + r02 * nz, r10 * nlx + r12 * nz, r20 * nlx + r22 * nz, alpha)
+    val colR = prismLeafShade(leaf.color, tint, r00 * nrx + r02 * nz, r10 * nrx + r12 * nz, r20 * nrx + r22 * nz, alpha)
+
+    leaf.pathL.rewind()
+    leaf.pathL.moveTo(leaf.mx[0], leaf.my[0])
+    for (i in 1..n) leaf.pathL.lineTo(leaf.mx[i], leaf.my[i])
+    for (i in n downTo 0) leaf.pathL.lineTo(leaf.lx[i], leaf.ly[i])
+    leaf.pathL.close()
+    leaf.pathR.rewind()
+    leaf.pathR.moveTo(leaf.mx[0], leaf.my[0])
+    for (i in 1..n) leaf.pathR.lineTo(leaf.mx[i], leaf.my[i])
+    for (i in n downTo 0) leaf.pathR.lineTo(leaf.rx[i], leaf.ry[i])
+    leaf.pathR.close()
+    drawPath(leaf.pathL, color = colL)
+    drawPath(leaf.pathR, color = colR)
+
+    val line = Color.Black.copy(alpha = 0.30f * alphaMul)
+    val outline = Stroke(width = 0.6f * d)
+    drawPath(leaf.pathL, color = line, style = outline)
+    drawPath(leaf.pathR, color = line, style = outline)
+    if (veins) {
+        drawLine(
+            color = Color(0xFF3B2A14).copy(alpha = 0.55f * alphaMul),
+            start = Offset(leaf.mx[0], leaf.my[0]),
+            end = Offset(leaf.stem[0], leaf.stem[1]),
+            strokeWidth = 1.1f * d,
+        )
+        drawLine(
+            color = line,
+            start = Offset(leaf.mx[0], leaf.my[0]),
+            end = Offset(leaf.mx[n], leaf.my[n]),
+            strokeWidth = 0.9f * d,
+        )
+        for (i in 1 until n) {
+            drawLine(
+                color = line,
+                start = Offset(leaf.mx[i], leaf.my[i]),
+                end = Offset(leaf.mx[i] + (leaf.lx[i] - leaf.mx[i]) * 0.8f, leaf.my[i] + (leaf.ly[i] - leaf.my[i]) * 0.8f),
+                strokeWidth = 0.5f * d,
+            )
+            drawLine(
+                color = line,
+                start = Offset(leaf.mx[i], leaf.my[i]),
+                end = Offset(leaf.mx[i] + (leaf.rx[i] - leaf.mx[i]) * 0.8f, leaf.my[i] + (leaf.ry[i] - leaf.my[i]) * 0.8f),
+                strokeWidth = 0.5f * d,
+            )
+        }
+    }
+}
+
+private fun DrawScope.drawPrismLeaves(
+    leaves: List<PrismLeaf>,
+    t: Float,
+    w: Float,
+    h: Float,
+    d: Float,
+    wind: Float,
+    tint: Color,
+    alphaMul: Float = 1f,
+    veins: Boolean = true,
+) {
+    for (leaf in leaves) {
+        leaf.step(t, w, h, d, wind)
+        drawPrismLeaf3D(leaf, d, tint, alphaMul, veins)
+    }
+}
+
+private class PrismStrand(
+    val y0: Float,
+    val y1: Float,
+    val sag: Float,
+    val count: Int,
+    val seed: Float,
+    val scale: Float,
+) {
+    val px = FloatArray(PRISM_ROPE_N + 1)
+    val py = FloatArray(PRISM_ROPE_N + 1)
+    val ox = FloatArray(PRISM_ROPE_N + 1)
+    val oy = FloatArray(PRISM_ROPE_N + 1)
+    val theta = FloatArray(count)
+    val omega = FloatArray(count)
+    val wire = Path()
+    var rest = 0f
+    var simW = -1f
+    var simH = -1f
+    var lastT = -1f
+}
+
+private fun buildPrismStrands(): List<PrismStrand> =
+    listOf(
+        PrismStrand(0.040f, 0.050f, 0.060f, 12, 0f, 1f),
+        PrismStrand(0.022f, 0.030f, 0.035f, 9, 1f, 0.8f),
+    )
+
+private fun buildPrismHomeStrands(): List<PrismStrand> =
+    listOf(
+        PrismStrand(0.05f, 0.08f, 0.22f, 10, 0f, 1f),
+        PrismStrand(0.02f, 0.03f, 0.12f, 7, 1f, 0.8f),
+    )
+
+private fun PrismStrand.step(
+    t: Float,
+    w: Float,
+    h: Float,
+    d: Float,
+    wind: Float,
+    yOffset: Float,
+) {
+    val n = PRISM_ROPE_N
+    val x0 = -0.04f * w
+    val x2 = 1.04f * w
+    val ya = y0 * h + yOffset
+    val yb = y1 * h + yOffset
+    if (simW != w || simH != h || lastT < 0f) {
+        simW = w
+        simH = h
+        var len = 0f
+        var prevX = x0
+        var prevY = ya
+        for (i in 0..n) {
+            val u = i.toFloat() / n
+            val x = x0 + (x2 - x0) * u
+            val y = ya + (yb - ya) * u + 4f * sag * h * u * (1f - u)
+            px[i] = x
+            py[i] = y
+            ox[i] = x
+            oy[i] = y
+            if (i > 0) len += sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY))
+            prevX = x
+            prevY = y
+        }
+        rest = len / n
+        lastT = t
+        return
+    }
+    var dt = t - lastT
+    lastT = t
+    if (dt <= 0f) return
+    if (dt > 0.05f) dt = 0.05f
+    val sub = 2
+    val sdt = dt / sub
+    val g = 900f * d
+    for (step in 0 until sub) {
+        px[0] = x0
+        py[0] = ya
+        px[n] = x2
+        py[n] = yb
+        for (i in 1 until n) {
+            val u = i.toFloat() / n
+            val local = wind * (0.8f + 0.4f * sin(t * 0.8f + u * 3.2f + seed * 2f)) + 0.12f * sin(t * 3.1f + i * 0.9f)
+            val ax = local * 420f * d
+            val ay = g - local * 40f * d
+            val vx = (px[i] - ox[i]) * 0.985f
+            val vy = (py[i] - oy[i]) * 0.985f
+            ox[i] = px[i]
+            oy[i] = py[i]
+            px[i] += vx + ax * sdt * sdt
+            py[i] += vy + ay * sdt * sdt
+        }
+        for (iter in 0 until 8) {
+            for (i in 0 until n) {
+                val dx = px[i + 1] - px[i]
+                val dy = py[i + 1] - py[i]
+                val dist = sqrt(dx * dx + dy * dy)
+                if (dist > 0.0001f) {
+                    val diff = (dist - rest) / dist
+                    val cx = dx * 0.5f * diff
+                    val cy = dy * 0.5f * diff
+                    if (i == 0) {
+                        px[i + 1] -= cx * 2f
+                        py[i + 1] -= cy * 2f
+                    } else if (i + 1 == n) {
+                        px[i] += cx * 2f
+                        py[i] += cy * 2f
+                    } else {
+                        px[i] += cx
+                        py[i] += cy
+                        px[i + 1] -= cx
+                        py[i + 1] -= cy
+                    }
+                }
+            }
+        }
+    }
+    for (i in 0 until count) {
+        val k = (((i + 0.5f) / count) * n).toInt().coerceIn(1, n - 1)
+        val nodeVx = (px[k] - ox[k]) / sdt
+        val phase = i * 1.7f + seed * 3.1f
+        val acc =
+            -26f * sin(theta[i]) - 2.2f * omega[i] +
+                wind * 8f * (0.6f + 0.4f * sin(t * 2.1f + phase)) - nodeVx / (40f * d)
+        omega[i] += acc * dt
+        theta[i] = (theta[i] + omega[i] * dt).coerceIn(-1.1f, 1.1f)
+    }
+}
+
+private fun DrawScope.drawPrismBulb(
+    c: Offset,
+    r: Float,
+    bulb: Color,
+    b: Float,
+    d: Float,
+) {
+    val glowBig = 34f * d * (0.7f + 0.3f * b)
+    drawCircle(
+        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.22f * b), Color.Transparent), center = c, radius = glowBig),
+        radius = glowBig,
+        center = c,
+    )
+    val glowMid = 17f * d
+    drawCircle(
+        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.50f * b), Color.Transparent), center = c, radius = glowMid),
+        radius = glowMid,
+        center = c,
+    )
+    val unlit = Color(0xFF2A2420)
+    val core = lerp(unlit, lerp(bulb, Color.White, 0.55f), b)
+    val mid = lerp(unlit, bulb, b)
+    val edge = lerp(Color.Black, mid, 0.55f)
+    drawCircle(
+        brush =
+            Brush.radialGradient(
+                colors = listOf(core.copy(alpha = 0.95f), mid.copy(alpha = 0.95f), edge.copy(alpha = 0.95f)),
+                center = c + Offset(-0.28f * r, -0.30f * r),
+                radius = 1.35f * r,
+            ),
+        radius = r,
+        center = c,
+    )
+    drawCircle(color = Color.White.copy(alpha = 0.9f * b), radius = 0.32f * r, center = c)
+    drawCircle(color = Color.White.copy(alpha = 0.55f), radius = 0.2f * r, center = c + Offset(-0.38f * r, -0.42f * r))
+}
+
+private fun DrawScope.drawPrismFairyLights(
+    strands: List<PrismStrand>,
+    t: Float,
+    w: Float,
+    h: Float,
+    d: Float,
+    wind: Float,
+    primary: Color,
+    secondary: Color,
+    tertiary: Color,
+    level: Float = 1f,
+    yOffset: Float = 0f,
+) {
+    val warm = Color(0xFFFFE7B0)
+    val wireColor = Color(0xFF2B2118)
+    val palette =
+        listOf(
+            warm,
+            lerp(primary, Color.White, 0.45f),
+            warm,
+            lerp(tertiary, Color.White, 0.45f),
+            lerp(secondary, Color.White, 0.40f),
+        )
+    val n = PRISM_ROPE_N
+    for (s in strands.asReversed()) {
+        s.step(t, w, h, d, wind, yOffset)
+        if (s.rest <= 0f) continue
+        s.wire.rewind()
+        s.wire.moveTo(s.px[0], s.py[0])
+        for (i in 1..n) s.wire.lineTo(s.px[i], s.py[i])
+        withTransform({ translate(0f, 1.6f * d) }) {
+            drawPath(s.wire, color = Color.Black.copy(alpha = 0.22f), style = Stroke(width = 2.2f * d * s.scale, cap = StrokeCap.Round))
+        }
+        drawPath(s.wire, color = wireColor.copy(alpha = 0.9f), style = Stroke(width = 1.7f * d * s.scale, cap = StrokeCap.Round))
+        drawPath(s.wire, color = Color.White.copy(alpha = 0.10f), style = Stroke(width = 0.6f * d, cap = StrokeCap.Round))
+
+        for (i in 0 until s.count) {
+            val k = (((i + 0.5f) / s.count) * n).toInt().coerceIn(1, n - 1)
+            val bx0 = s.px[k]
+            val by0 = s.py[k]
+            val th = s.theta[i]
+            val r = 5.2f * d * s.scale
+            val cord = 6f * d * s.scale
+            val dirX = sin(th)
+            val dirY = cos(th)
+            val topX = bx0 + dirX * cord
+            val topY = by0 + dirY * cord
+            drawLine(color = wireColor.copy(alpha = 0.9f), start = Offset(bx0, by0), end = Offset(topX, topY), strokeWidth = 1.2f * d * s.scale)
+            drawLine(
+                color = Color(0xFF4A3B2A),
+                start = Offset(topX, topY),
+                end = Offset(topX + dirX * r * 0.7f, topY + dirY * r * 0.7f),
+                strokeWidth = r * 0.85f,
+                cap = StrokeCap.Round,
+            )
+            val center = Offset(bx0 + dirX * (cord + r * 0.9f), by0 + dirY * (cord + r * 0.9f))
+
+            val phase = i * 1.7f + s.seed * 3.1f
+            val gust = max(0f, wind - 0.55f)
+            val flick = 0.84f + 0.10f * sin(t * (2.1f + (i % 3) * 0.8f) + phase) + 0.06f * sin(t * 7.3f + phase * 1.7f)
+            val dip = 1f - 0.5f * gust * (0.5f + 0.5f * sin(t * 14f + phase * 2.3f))
+            val b = (flick * dip).coerceIn(0.3f, 1f) * level
+            drawPrismBulb(center, r, palette[(i + s.seed.toInt()) % palette.size], b, d)
+        }
+    }
+}
+
 private class PrismField {
-    val leaves = buildPrismLeaves(18, 9f, 20f, PrismLeafColors, 1f)
-    val petals = buildPrismLeaves(26, 5f, 9f, PrismPetalColors, 0.7f)
+    val leaves = buildPrismLeaves(16, 10f, 22f, PrismLeafColors, 1f)
+    val petals = buildPrismLeaves(26, 5f, 9f, PrismPetalColors, 0.7f, 0.9f, 0.8f)
     val snow = buildPrismDots(21, 70, 1.2f, 3.6f, 0.04f, 0.09f, 12f)
     val rain = buildPrismDots(22, 80, 10f, 18f, 0.7f, 1.2f, 0f)
     val flies = buildPrismDots(23, 22, 1f, 2f, 0f, 0f, 14f)
     val butterflies = buildPrismDots(24, 3, 0f, 0f, 0f, 0f, 0f)
     val sparkles = buildPrismDots(25, 36, 0.8f, 2.0f, 0.01f, 0.03f, 0f)
     val stars = buildPrismDots(26, 40, 0.8f, 1.8f, 0f, 0f, 0f)
+    val strands = buildPrismStrands()
 }
-
-private val PrismLeafPath =
-    Path().apply {
-        moveTo(0f, -1f)
-        cubicTo(0.9f, -0.55f, 0.85f, 0.55f, 0f, 1f)
-        cubicTo(-0.85f, 0.55f, -0.9f, -0.55f, 0f, -1f)
-        close()
-    }
 
 private fun prismWind(t: Float): Float {
     val gust = (sin(t * 0.37f) + 0.6f * sin(t * 0.83f + 1.7f) + 0.8f * sin(t * 0.19f + 4f)) / 2.4f
@@ -482,47 +913,6 @@ private fun prismWrap(
     var v = (x + pad) % span
     if (v < 0f) v += span
     return v - pad
-}
-
-private fun DrawScope.drawPrismLeaves(
-    leaves: List<PrismLeaf>,
-    t: Float,
-    w: Float,
-    h: Float,
-    d: Float,
-    wind: Float,
-    tint: Color,
-    alphaMul: Float = 1f,
-    veins: Boolean = true,
-) {
-    val margin = 40f * d
-    val travel = h + margin * 2f
-    for (leaf in leaves) {
-        val raw = (leaf.yPhase + t * leaf.speed) % 1f
-        val y = raw * travel - margin
-        val swayWave = sin(t * leaf.swayFreq + leaf.swayPhase)
-        val sway = swayWave * leaf.swayAmpDp * d
-        val drift = wind * (24f + 40f * leaf.depth) * d * (0.4f + raw)
-        val x = prismWrap(leaf.xFrac * w + sway + drift, w + 120f * d, 60f * d)
-        val rot = leaf.spinPhase + t * leaf.spin + wind * 25f + swayWave * 30f
-        val flip = cos(t * leaf.flipFreq + leaf.flipPhase)
-        val sx = max(0.22f, abs(flip))
-        val shade = (0.78f + 0.22f * flip).coerceIn(0.55f, 1f)
-        val shaded = lerp(Color.Black, leaf.color, shade)
-        val body = lerp(shaded, tint, 0.15f).copy(alpha = (0.55f + 0.4f * leaf.depth) * alphaMul)
-        val vein = Color.Black.copy(alpha = 0.28f * alphaMul)
-        val sizePx = leaf.sizeDp * d
-        withTransform({
-            translate(x, y)
-            rotate(rot, Offset.Zero)
-            scale(sx * sizePx, sizePx, Offset.Zero)
-        }) {
-            drawPath(PrismLeafPath, color = body)
-            if (veins) {
-                drawLine(color = vein, start = Offset(0f, -0.8f), end = Offset(0f, 1.3f), strokeWidth = 0.06f)
-            }
-        }
-    }
 }
 
 private fun DrawScope.drawPrismSnow(
@@ -649,83 +1039,6 @@ private fun DrawScope.drawPrismStars(
     }
 }
 
-private fun DrawScope.drawPrismFairyLights(
-    strands: List<PrismStrand>,
-    t: Float,
-    w: Float,
-    h: Float,
-    d: Float,
-    wind: Float,
-    primary: Color,
-    secondary: Color,
-    tertiary: Color,
-    level: Float = 1f,
-    yOffset: Float = 0f,
-) {
-    val warm = Color(0xFFFFE7B0)
-    val wireColor = Color(0xFF2B2118).copy(alpha = 0.75f)
-    val palette =
-        listOf(
-            warm,
-            lerp(primary, Color.White, 0.45f),
-            warm,
-            lerp(tertiary, Color.White, 0.45f),
-            lerp(secondary, Color.White, 0.40f),
-        )
-    for (s in strands) {
-        val x0 = -0.04f * w
-        val x2 = 1.04f * w
-        val y0 = s.y0 * h + yOffset
-        val y2 = s.y1 * h + yOffset
-        val sway = wind * 0.025f * w + sin(t * 0.9f + s.seed) * 0.008f * w
-        val cx = (x0 + x2) / 2f + sway
-        val cy = (y0 + y2) / 2f + 2f * s.sag * h * (1f + 0.10f * sin(t * 1.3f + s.seed * 2f) + 0.08f * wind)
-
-        val wire = Path()
-        wire.moveTo(x0, y0)
-        wire.cubicTo(
-            x0 + 2f / 3f * (cx - x0),
-            y0 + 2f / 3f * (cy - y0),
-            x2 + 2f / 3f * (cx - x2),
-            y2 + 2f / 3f * (cy - y2),
-            x2,
-            y2,
-        )
-        drawPath(wire, color = wireColor, style = Stroke(width = 1.6f * d, cap = StrokeCap.Round))
-
-        for (i in 0 until s.count) {
-            val u = (i + 0.5f) / s.count
-            val omu = 1f - u
-            val px = omu * omu * x0 + 2f * omu * u * cx + u * u * x2
-            val py = omu * omu * y0 + 2f * omu * u * cy + u * u * y2
-            val phase = i * 1.7f + s.seed * 3.1f
-            val swing = wind * 5f * d + sin(t * 1.7f + phase) * 2.2f * d
-            val bx = px + swing
-            val by = py + 9f * d
-            drawLine(color = wireColor, start = Offset(px, py), end = Offset(bx, by), strokeWidth = 1.4f * d)
-
-            val gust = max(0f, wind - 0.55f)
-            val flick = 0.82f + 0.18f * sin(t * (2.1f + (i % 3) * 0.8f) + phase)
-            val dip = 1f - 0.5f * gust * (0.5f + 0.5f * sin(t * 14f + phase * 2.3f))
-            val b = (flick * dip).coerceIn(0.3f, 1f) * level
-            val bulb = palette[(i + s.seed.toInt()) % palette.size]
-            val center = Offset(bx, by)
-            drawCircle(
-                brush =
-                    Brush.radialGradient(
-                        colors = listOf(bulb.copy(alpha = 0.55f * b), Color.Transparent),
-                        center = center,
-                        radius = 22f * d,
-                    ),
-                radius = 22f * d,
-                center = center,
-            )
-            drawCircle(color = bulb.copy(alpha = b), radius = 4.2f * d, center = center)
-            drawCircle(color = Color.White.copy(alpha = 0.85f * b), radius = 1.8f * d, center = center)
-        }
-    }
-}
-
 @Composable
 fun PrismNature(
     active: Boolean,
@@ -775,7 +1088,7 @@ fun PrismNature(
             else -> drawPrismRain(field.rain, t, w, h, d, wind)
         }
         drawPrismSparkles(field.sparkles, t, w, h, d, lerp(primary, Color.White, 0.6f))
-        drawPrismFairyLights(PrismStrands, t, w, h, d, wind, primary, secondary, tertiary, level)
+        drawPrismFairyLights(field.strands, t, w, h, d, wind, primary, secondary, tertiary, level)
     }
 }
 
@@ -795,13 +1108,14 @@ fun PrismHomeLights(modifier: Modifier = Modifier) {
     val primary by animateColorAsState(MaterialTheme.colorScheme.primary, tween(900), label = "homeP")
     val secondary by animateColorAsState(MaterialTheme.colorScheme.secondary, tween(900), label = "homeS")
     val tertiary by animateColorAsState(MaterialTheme.colorScheme.tertiary, tween(900), label = "homeT")
+    val strands = remember { buildPrismHomeStrands() }
 
     Canvas(modifier = modifier) {
         if (!enabled) return@Canvas
         val t = timeNanos.longValue / 1_000_000_000f
         val d = 1.dp.toPx()
         val wind = prismWind(t) * windStrength
-        drawPrismFairyLights(PrismHomeStrands, t, size.width, size.height, d, wind, primary, secondary, tertiary)
+        drawPrismFairyLights(strands, t, size.width, size.height, d, wind, primary, secondary, tertiary)
     }
 }
 

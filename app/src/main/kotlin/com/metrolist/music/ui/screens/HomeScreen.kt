@@ -2032,7 +2032,7 @@ fun HomeScreen(
                                                 ),
                                     ) {
                                         items(keepListening.distinctBy { it.id }, key = { "home_keep_listening_${it.id}" }) {
-                                            localGridItem(it)
+                                            Box(modifier = Modifier.padding(horizontal = 6.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) { localGridItem(it) } // prismKeepCard
                                         }
                                     }
                                 }
