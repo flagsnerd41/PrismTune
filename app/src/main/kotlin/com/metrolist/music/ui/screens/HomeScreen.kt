@@ -1815,86 +1815,73 @@ fun HomeScreen(
                                 }
 
                                 item(key = "quick_picks_list") {
-                                    LazyHorizontalGrid(
-                                        state = quickPicksLazyGridState,
-                                        rows = GridCells.Fixed(4),
-                                        flingBehavior = rememberSnapFlingBehavior(quickPicksSnapLayoutInfoProvider),
-                                        contentPadding =
-                                            WindowInsets.systemBars
-                                                .only(WindowInsetsSides.Horizontal)
-                                                .asPaddingValues(),
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .height(ListItemHeight * 4),
-                                        ) {
-                                            items(
-                                                items = quickPicks.distinctBy { it.id },
-                                                key = { "home_quickpick_${it.id}" },
-                                            ) { originalSong ->
-                                            // fetch song from database to keep updated
-                                            val song by database
-                                                .song(originalSong.id)
-                                                .collectAsStateWithLifecycle(initialValue = originalSong)
-
-                                            SongListItem(
-                                                song = song!!,
-                                                showInLibraryIcon = true,
-                                                isActive = song!!.id == mediaMetadata?.id,
-                                                isPlaying = isPlaying,
-                                                isSwipeable = false,
-                                                trailingContent = {
-                                                    IconButton(
+                                    val picks = remember(quickPicks) { quickPicks.distinctBy { it.id } }
+                                    val picksState = rememberCarouselState { picks.size }
+                                    HorizontalMultiBrowseCarousel(
+                                        state = picksState,
+                                        preferredItemWidth = 300.dp,
+                                        itemSpacing = 12.dp,
+                                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
+                                        modifier = Modifier.fillMaxWidth().height(340.dp),
+                                    ) { i ->
+                                        val pick = picks[i]
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxSize()
+                                                    .maskClip(RoundedCornerShape(32.dp))
+                                                    .combinedClickable(
                                                         onClick = {
-                                                            menuState.show {
-                                                                SongMenu(
-                                                                    originalSong = song!!,
-                                                                    onDismiss = menuState::dismiss,
-                                                                )
-                                                            }
-                                                        },
-                                                    ) {
-                                                        Icon(
-                                                            painter = painterResource(R.drawable.more_vert),
-                                                            contentDescription = null,
-                                                        )
-                                                    }
-                                                },
-                                                modifier =
-                                                    Modifier
-                                                        .width(horizontalLazyGridItemWidth)
-                                                        .combinedClickable(
-                                                            onClick = {
-                                                                if (!isListenTogetherGuest) {
-                                                                    if (song!!.id == mediaMetadata?.id) {
-                                                                        playerConnection.togglePlayPause()
-                                                                    } else {
-                                                                        playerConnection.playQueue(
-                                                                            if (autoRadioQueue) {
-                                                                                YouTubeQueue.radio(
-                                                                                    song!!.toMediaMetadata(),
-                                                                                )
-                                                                            } else {
-                                                                                ListQueue(
-                                                                                    title = song!!.title,
-                                                                                    items = listOf(song!!.toMediaItem())
-                                                                                )
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                }
-                                                            },
-                                                            onLongClick = {
-                                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                                menuState.show {
-                                                                    SongMenu(
-                                                                        originalSong = song!!,
-                                                                        onDismiss = menuState::dismiss,
+                                                            if (!isListenTogetherGuest) {
+                                                                if (pick.id == mediaMetadata?.id) {
+                                                                    playerConnection.togglePlayPause()
+                                                                } else {
+                                                                    playerConnection.playQueue(
+                                                                        if (autoRadioQueue) {
+                                                                            YouTubeQueue.radio(pick.toMediaMetadata())
+                                                                        } else {
+                                                                            ListQueue(title = pick.title, items = listOf(pick.toMediaItem()))
+                                                                        },
                                                                     )
                                                                 }
-                                                            },
-                                                        ),
+                                                            }
+                                                        },
+                                                        onLongClick = {
+                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                            menuState.show {
+                                                                SongMenu(originalSong = pick, onDismiss = menuState::dismiss)
+                                                            }
+                                                        },
+                                                    ),
+                                        ) {
+                                            AsyncImage(
+                                                model = ImageRequest.Builder(LocalContext.current).data(pick.thumbnailUrl).crossfade(true).build(),
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize(),
                                             )
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxSize()
+                                                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f)))),
+                                            )
+                                            Column(modifier = Modifier.align(Alignment.BottomStart).padding(20.dp)) {
+                                                Text(
+                                                    text = pick.title,
+                                                    style = MaterialTheme.typography.titleLarge,
+                                                    color = Color.White,
+                                                    maxLines = 2,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                )
+                                                Text(
+                                                    text = pick.artists.joinToString { it.name },
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    color = Color.White.copy(alpha = 0.8f),
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                )
+                                            }
                                         }
                                     }
                                 }
