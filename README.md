@@ -1,3 +1,4 @@
+<img width="1513" height="1513" alt="2538" src="https://github.com/user-attachments/assets/98be0d02-edcc-4a81-82f8-6dddde6f9d83" />
 <div align="center">
 
 <img src="assets/prismtune-icon.png" alt="PrismTune2 app icon" width="200" />
