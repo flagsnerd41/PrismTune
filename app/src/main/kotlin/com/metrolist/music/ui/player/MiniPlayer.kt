@@ -390,7 +390,7 @@ private fun NewMiniPlayer(
                             }
                         } ?: Modifier,
                     )
-                    .background(color = backgroundColor.copy(alpha = 0.42f))
+                    .background(color = backgroundColor.copy(alpha = if (LocalHazeState.current != null) 0.42f else 1f))
                     .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
                     .clickable(
                         interactionSource = interactionSource,

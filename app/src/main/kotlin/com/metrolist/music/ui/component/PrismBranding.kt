@@ -878,7 +878,8 @@ fun PrismNature(
     val seasonPref by rememberPreference(PrismSeasonKey, defaultValue = 0)
     val season = remember(seasonPref) { prismResolveSeason(seasonPref) }
     val isNight = remember { prismIsNight() }
-    val running = active && enabled
+    val powerSave = rememberPrismPowerSave()
+    val running = active && enabled && !powerSave
     val timeNanos = remember { mutableLongStateOf(0L) }
     LaunchedEffect(running) {
         if (running) {
@@ -903,17 +904,17 @@ fun PrismNature(
         val h = size.height
         if (isNight) drawPrismStars(field.stars, t, w, h, d)
         when (season) {
-            1 -> drawPrismLeaves(field.leaves, t, w, h, d, wind, primary)
-            2 -> drawPrismSnow(field.snow, t, w, h, d, wind)
+            1 -> drawPrismLeaves(field.leaves, t, w, h, d, wind * prismGust(t), primary)
+            2 -> drawPrismSnow(field.snow, t, w, h, d, wind * prismGust(t))
             3 -> {
-                drawPrismLeaves(field.petals, t, w, h, d, wind, primary, 1f, false)
+                drawPrismLeaves(field.petals, t, w, h, d, wind * prismGust(t), primary, 1f, false)
                 drawPrismButterflies(field.butterflies, t, w, h, d, primary, tertiary)
             }
             4 -> {
                 drawPrismFireflies(field.flies, t, w, h, d)
                 drawPrismButterflies(field.butterflies, t, w, h, d, primary, tertiary)
             }
-            else -> drawPrismRain(field.rain, t, w, h, d, wind)
+            else -> drawPrismRain(field.rain, t, w, h, d, wind * prismGust(t))
         }
         drawPrismSparkles(field.sparkles, t, w, h, d, lerp(primary, Color.White, 0.6f))
         drawPrismFairyLights(field.strands, t, w, h, d, wind, primary, secondary, tertiary, level)
@@ -1008,4 +1009,27 @@ private fun prismGust(t: Float): Float {
     if (ph < 25f) return 1f
     val x = (ph - 25f) / 5f
     return 1f + 2.2f * sin(Math.PI.toFloat() * x)
+}
+
+@Composable
+fun rememberPrismPowerSave(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val pm = remember(context) { context.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager }
+    val state = remember(pm) { androidx.compose.runtime.mutableStateOf(pm.isPowerSaveMode) }
+    androidx.compose.runtime.DisposableEffect(context) {
+        val receiver =
+            object : android.content.BroadcastReceiver() {
+                override fun onReceive(c: android.content.Context?, i: android.content.Intent?) {
+                    state.value = pm.isPowerSaveMode
+                }
+            }
+        androidx.core.content.ContextCompat.registerReceiver(
+            context,
+            receiver,
+            android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+    }
+    return state.value
 }

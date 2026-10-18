@@ -24,6 +24,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.graphics.Brush
 import com.metrolist.music.ui.component.WelcomeSplash
+import com.metrolist.music.ui.component.rememberPrismPowerSave
 import com.metrolist.music.ui.component.PrismTitleBanner
 import com.metrolist.music.ui.component.WelcomeSplashState
 import androidx.compose.animation.AnimatedVisibility
@@ -1052,6 +1053,8 @@ class MainActivity : FragmentActivity() {
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
                 val hazeState = remember { HazeState() }
+                val powerSave = rememberPrismPowerSave()
+                val blurOff = powerSave || currentRoute == Screens.Home.route
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -1066,7 +1069,7 @@ class MainActivity : FragmentActivity() {
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
-                    LocalHazeState provides hazeState,
+                    LocalHazeState provides (if (blurOff) null else hazeState),
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1137,14 +1140,14 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f),
-                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f),
+                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
+                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            (if (currentRoute == Screens.Home.route) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }).windowInsetsPadding(
+                                            (if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }).windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))
@@ -1263,7 +1266,7 @@ class MainActivity : FragmentActivity() {
                                                             slideOffset + hideOffset
                                                         }
                                                 }
-                                                .hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f },
+                                                .then(if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }),
                                     )
 
                                     Box(

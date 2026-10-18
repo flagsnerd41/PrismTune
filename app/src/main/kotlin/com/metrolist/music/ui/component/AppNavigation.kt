@@ -5,6 +5,7 @@
 
 package com.metrolist.music.ui.component
 
+import com.metrolist.music.LocalHazeState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Spacer
@@ -139,7 +140,7 @@ fun AppNavigationBar(
     onSearchLongClick: (() -> Unit)? = null,
     onHomeLongHold: (() -> Unit)? = null,
 ) {
-    val containerColor = if (pureBlack) Color.Black.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f)
+    val containerColor = if (pureBlack) Color.Black.copy(alpha = if (LocalHazeState.current != null) 0.5f else 1f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (LocalHazeState.current != null) 0.45f else 1f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
