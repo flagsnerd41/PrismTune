@@ -404,15 +404,6 @@ private class PrismLeaf(
     var yaw = seed * 31f
     var pitch = 0f
     var roll = 0f
-    val mx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val my = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val lx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val ly = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val rx = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val ry = FloatArray(PRISM_LEAF_SEGMENTS + 1)
-    val stem = FloatArray(2)
-    val pathL = Path()
-    val pathR = Path()
 }
 
 private fun buildPrismLeaves(
@@ -490,134 +481,38 @@ private fun PrismLeaf.step(
     x = xx - 60f * d
 }
 
-private fun prismLeafShade(
-    base: Color,
-    tint: Color,
-    nx: Float,
-    ny: Float,
-    nz: Float,
-    alpha: Float,
-): Color {
-    val sgn = if (nz >= 0f) 1f else -1f
-    val dd = (nx * -0.35f + ny * -0.6f + nz * 0.72f) * sgn
-    val diffuse = max(0f, dd)
-    val backlit = max(0f, -dd)
-    var c = lerp(base, tint, 0.12f)
-    if (sgn < 0f) c = lerp(c, Color(0xFFD8C79A), 0.30f)
-    var out = lerp(Color.Black, c, 0.30f + 0.70f * diffuse)
-    out = lerp(out, lerp(c, Color.White, 0.45f), (backlit * 0.7f).coerceIn(0f, 0.7f))
-    out = lerp(out, Color.White, diffuse * diffuse * diffuse * diffuse * 0.20f)
-    return out.copy(alpha = alpha)
-}
+private val PrismLeafPath =
+    Path().apply {
+        moveTo(0f, -1f)
+        cubicTo(0.9f, -0.55f, 0.85f, 0.55f, 0f, 1f)
+        cubicTo(-0.85f, 0.55f, -0.9f, -0.55f, 0f, -1f)
+        close()
+    }
 
-private fun DrawScope.drawPrismLeaf3D(
+private fun DrawScope.drawPrismLeafFlat(
     leaf: PrismLeaf,
+    t: Float,
     d: Float,
     tint: Color,
     alphaMul: Float,
     veins: Boolean,
 ) {
-    val size = leaf.sizeDp * d
-    val f = 260f * d
-    val angX = leaf.pitch + 0.35f
-    val angY = leaf.yaw
-    val angZ = leaf.roll
-    val cx = cos(angX)
-    val sx = sin(angX)
-    val cy = cos(angY)
-    val sy = sin(angY)
-    val cz = cos(angZ)
-    val sz = sin(angZ)
-    val r00 = cz * cy - sz * sx * sy
-    val r01 = -sz * cx
-    val r02 = cz * sy + sz * sx * cy
-    val r10 = sz * cy + cz * sx * sy
-    val r11 = cz * cx
-    val r12 = sz * sy - cz * sx * cy
-    val r20 = -cx * sy
-    val r21 = sx
-    val r22 = cx * cy
-
-    fun put(
-        ax: FloatArray,
-        ay: FloatArray,
-        i: Int,
-        lx: Float,
-        ly: Float,
-        lz: Float,
-    ) {
-        val px = (r00 * lx + r01 * ly + r02 * lz) * size
-        val py = (r10 * lx + r11 * ly + r12 * lz) * size
-        val pz = (r20 * lx + r21 * ly + r22 * lz) * size
-        val k = f / (f - pz)
-        ax[i] = leaf.x + px * k
-        ay[i] = leaf.y + py * k
-    }
-
-    val n = PRISM_LEAF_SEGMENTS
-    for (i in 0..n) {
-        val s = i.toFloat() / n
-        val yy = 1f - 2f * s
-        val wd = leaf.widthK * sin(PRISM_PI * s.pow(0.8f)) * 0.55f
-        val zm = -0.35f * s * s * leaf.curl
-        val ze = zm + leaf.curl * 4f * wd * wd
-        put(leaf.mx, leaf.my, i, 0f, yy, zm)
-        put(leaf.lx, leaf.ly, i, -wd, yy, ze)
-        put(leaf.rx, leaf.ry, i, wd, yy, ze)
-    }
-    put(leaf.stem, leaf.stem, 0, 0f, 1.28f, 0f)
-
-    val c = 2.2f * leaf.curl
-    val inv = 1f / sqrt(1f + c * c)
-    val nlx = c * inv
-    val nrx = -c * inv
-    val nz = inv
-    val alpha = (0.62f + 0.38f * leaf.depth) * alphaMul
-    val colL = prismLeafShade(leaf.color, tint, r00 * nlx + r02 * nz, r10 * nlx + r12 * nz, r20 * nlx + r22 * nz, alpha)
-    val colR = prismLeafShade(leaf.color, tint, r00 * nrx + r02 * nz, r10 * nrx + r12 * nz, r20 * nrx + r22 * nz, alpha)
-
-    leaf.pathL.rewind()
-    leaf.pathL.moveTo(leaf.mx[0], leaf.my[0])
-    for (i in 1..n) leaf.pathL.lineTo(leaf.mx[i], leaf.my[i])
-    for (i in n downTo 0) leaf.pathL.lineTo(leaf.lx[i], leaf.ly[i])
-    leaf.pathL.close()
-    leaf.pathR.rewind()
-    leaf.pathR.moveTo(leaf.mx[0], leaf.my[0])
-    for (i in 1..n) leaf.pathR.lineTo(leaf.mx[i], leaf.my[i])
-    for (i in n downTo 0) leaf.pathR.lineTo(leaf.rx[i], leaf.ry[i])
-    leaf.pathR.close()
-    drawPath(leaf.pathL, color = colL)
-    drawPath(leaf.pathR, color = colR)
-
-    val line = Color.Black.copy(alpha = 0.30f * alphaMul)
-    val outline = Stroke(width = 0.6f * d)
-    drawPath(leaf.pathL, color = line, style = outline)
-    drawPath(leaf.pathR, color = line, style = outline)
-    if (veins) {
-        drawLine(
-            color = Color(0xFF3B2A14).copy(alpha = 0.55f * alphaMul),
-            start = Offset(leaf.mx[0], leaf.my[0]),
-            end = Offset(leaf.stem[0], leaf.stem[1]),
-            strokeWidth = 1.1f * d,
-        )
-        drawLine(
-            color = line,
-            start = Offset(leaf.mx[0], leaf.my[0]),
-            end = Offset(leaf.mx[n], leaf.my[n]),
-            strokeWidth = 0.9f * d,
-        )
-        for (i in 1 until n) {
+    val sizePx = leaf.sizeDp * d
+    val rot = leaf.seed * 360f + t * leaf.yawSpeed * 18f + leaf.pitch * 35f + leaf.roll * 40f
+    val sx = max(0.35f, abs(cos(leaf.yaw))) * leaf.widthK
+    val body = lerp(leaf.color, tint, 0.12f).copy(alpha = (0.65f + 0.3f * leaf.depth) * alphaMul)
+    withTransform({
+        translate(leaf.x, leaf.y)
+        rotate(rot, Offset.Zero)
+        scale(sx * sizePx * 0.62f, sizePx, Offset.Zero)
+    }) {
+        drawPath(PrismLeafPath, color = body)
+        if (veins) {
             drawLine(
-                color = line,
-                start = Offset(leaf.mx[i], leaf.my[i]),
-                end = Offset(leaf.mx[i] + (leaf.lx[i] - leaf.mx[i]) * 0.8f, leaf.my[i] + (leaf.ly[i] - leaf.my[i]) * 0.8f),
-                strokeWidth = 0.5f * d,
-            )
-            drawLine(
-                color = line,
-                start = Offset(leaf.mx[i], leaf.my[i]),
-                end = Offset(leaf.mx[i] + (leaf.rx[i] - leaf.mx[i]) * 0.8f, leaf.my[i] + (leaf.ry[i] - leaf.my[i]) * 0.8f),
-                strokeWidth = 0.5f * d,
+                color = Color.White.copy(alpha = 0.22f * alphaMul),
+                start = Offset(0f, -0.85f),
+                end = Offset(0f, 1.25f),
+                strokeWidth = 0.07f,
             )
         }
     }
@@ -636,7 +531,7 @@ private fun DrawScope.drawPrismLeaves(
 ) {
     for (leaf in leaves) {
         leaf.step(t, w, h, d, wind)
-        drawPrismLeaf3D(leaf, d, tint, alphaMul, veins)
+        drawPrismLeafFlat(leaf, t, d, tint, alphaMul, veins)
     }
 }
 
@@ -778,32 +673,18 @@ private fun DrawScope.drawPrismBulb(
 ) {
     val glowBig = 34f * d * (0.7f + 0.3f * b)
     drawCircle(
-        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.22f * b), Color.Transparent), center = c, radius = glowBig),
+        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.26f * b), Color.Transparent), center = c, radius = glowBig),
         radius = glowBig,
         center = c,
     )
-    val glowMid = 17f * d
+    val glowMid = 16f * d
     drawCircle(
-        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.50f * b), Color.Transparent), center = c, radius = glowMid),
+        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.55f * b), Color.Transparent), center = c, radius = glowMid),
         radius = glowMid,
         center = c,
     )
-    val unlit = Color(0xFF2A2420)
-    val core = lerp(unlit, lerp(bulb, Color.White, 0.55f), b)
-    val mid = lerp(unlit, bulb, b)
-    val edge = lerp(Color.Black, mid, 0.55f)
-    drawCircle(
-        brush =
-            Brush.radialGradient(
-                colors = listOf(core.copy(alpha = 0.95f), mid.copy(alpha = 0.95f), edge.copy(alpha = 0.95f)),
-                center = c + Offset(-0.28f * r, -0.30f * r),
-                radius = 1.35f * r,
-            ),
-        radius = r,
-        center = c,
-    )
-    drawCircle(color = Color.White.copy(alpha = 0.9f * b), radius = 0.32f * r, center = c)
-    drawCircle(color = Color.White.copy(alpha = 0.55f), radius = 0.2f * r, center = c + Offset(-0.38f * r, -0.42f * r))
+    drawCircle(color = lerp(Color(0xFF3A322B), bulb, b), radius = r, center = c)
+    drawCircle(color = Color.White.copy(alpha = 0.75f * b), radius = 0.45f * r, center = c)
 }
 
 private fun DrawScope.drawPrismFairyLights(
@@ -836,11 +717,7 @@ private fun DrawScope.drawPrismFairyLights(
         s.wire.rewind()
         s.wire.moveTo(s.px[0], s.py[0])
         for (i in 1..n) s.wire.lineTo(s.px[i], s.py[i])
-        withTransform({ translate(0f, 1.6f * d) }) {
-            drawPath(s.wire, color = Color.Black.copy(alpha = 0.22f), style = Stroke(width = 2.2f * d * s.scale, cap = StrokeCap.Round))
-        }
         drawPath(s.wire, color = wireColor.copy(alpha = 0.9f), style = Stroke(width = 1.7f * d * s.scale, cap = StrokeCap.Round))
-        drawPath(s.wire, color = Color.White.copy(alpha = 0.10f), style = Stroke(width = 0.6f * d, cap = StrokeCap.Round))
 
         for (i in 0 until s.count) {
             val k = (((i + 0.5f) / s.count) * n).toInt().coerceIn(1, n - 1)
