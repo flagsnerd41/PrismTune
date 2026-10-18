@@ -1137,14 +1137,14 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
-                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
+                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f),
+                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (currentRoute == Screens.Home.route) 1f else 0.4f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }.windowInsetsPadding(
+                                            (if (currentRoute == Screens.Home.route) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }).windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))

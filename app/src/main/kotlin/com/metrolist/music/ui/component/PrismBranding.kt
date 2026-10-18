@@ -920,13 +920,15 @@ fun PrismNature(
     }
 }
 
+private const val PRISM_HOME_LIGHTS = false
+
 @Composable
 fun PrismHomeLights(modifier: Modifier = Modifier) {
     val enabled by rememberPreference(PrismNatureKey, defaultValue = true)
     val windStrength by rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
     val timeNanos = remember { mutableLongStateOf(0L) }
     LaunchedEffect(enabled) {
-        if (enabled) {
+        if (enabled && PRISM_HOME_LIGHTS) {
             val start = withFrameNanos { it }
             while (true) {
                 withFrameNanos { timeNanos.longValue = it - start }
@@ -939,7 +941,7 @@ fun PrismHomeLights(modifier: Modifier = Modifier) {
     val strands = remember { buildPrismHomeStrands() }
 
     Canvas(modifier = modifier) {
-        if (!enabled) return@Canvas
+        if (!enabled || !PRISM_HOME_LIGHTS) return@Canvas
         val t = timeNanos.longValue / 1_000_000_000f
         val d = 1.dp.toPx()
         val wind = prismWind(t) * windStrength
