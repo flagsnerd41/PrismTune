@@ -1246,7 +1246,7 @@ class MainActivity : FragmentActivity() {
                                                 .clip(RoundedCornerShape(32.dp))
                                                 .height(bottomInset + navPadding)
                                                 .hazeEffect(state = hazeState) {
-                                                    blurRadius = 24.dp
+                                                    blurRadius = 40.dp
                                                     noiseFactor = 0f
                                                 }
                                                 // Use graphicsLayer instead of offset to avoid recomposition

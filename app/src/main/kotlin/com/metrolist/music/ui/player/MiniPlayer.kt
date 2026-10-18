@@ -385,12 +385,12 @@ private fun NewMiniPlayer(
                     .then(
                         LocalHazeState.current?.let { hz ->
                             Modifier.hazeEffect(state = hz) {
-                                blurRadius = 24.dp
+                                blurRadius = 40.dp
                                 noiseFactor = 0f
                             }
                         } ?: Modifier,
                     )
-                    .background(color = backgroundColor.copy(alpha = 0.6f))
+                    .background(color = backgroundColor.copy(alpha = 0.42f))
                     .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
                     .clickable(
                         interactionSource = interactionSource,

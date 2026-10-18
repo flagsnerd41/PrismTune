@@ -1030,7 +1030,7 @@ private fun PrismLibraryTiles(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(28.dp))
-                        .background(cs.surfaceContainerHigh.copy(alpha = 0.85f))
+                        .background(cs.surfaceContainerHigh.copy(alpha = 0.7f))
                         .clickable { onClick(hero.route) }
                         .padding(20.dp),
             ) {
@@ -1103,7 +1103,7 @@ private fun PrismTileCard(
     onClick: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
-    val bg = if (t.liked) cs.errorContainer.copy(alpha = 0.45f) else cs.surfaceContainer.copy(alpha = 0.85f)
+    val bg = if (t.liked) cs.errorContainer.copy(alpha = 0.45f) else cs.surfaceContainer.copy(alpha = 0.7f)
     Column(
         modifier =
             modifier
