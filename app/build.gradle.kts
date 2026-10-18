@@ -251,6 +251,7 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation("dev.chrisbanes.haze:haze:1.6.0")
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
 

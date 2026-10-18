@@ -136,6 +136,9 @@ import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import com.metrolist.innertube.YouTube
 import com.metrolist.innertube.models.SongItem
 import com.metrolist.innertube.models.WatchEndpoint
@@ -1048,6 +1051,7 @@ class MainActivity : FragmentActivity() {
                     }
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+                val hazeState = remember { HazeState() }
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -1062,6 +1066,7 @@ class MainActivity : FragmentActivity() {
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
+                    LocalHazeState provides hazeState,
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1079,7 +1084,7 @@ class MainActivity : FragmentActivity() {
                                 Row {
                                     TopAppBar(
                                         title = {
-                                            if (currentRoute == Screens.Home.route) { PrismTitleBanner() } else { Text(text = currentTitleRes?.let { stringResource(it) } ?: "", style = MaterialTheme.typography.titleLarge) }
+                                            if (currentRoute == Screens.Home.route || currentRoute == Screens.Library.route) { PrismTitleBanner() } else { Text(text = currentTitleRes?.let { stringResource(it) } ?: "", style = MaterialTheme.typography.titleLarge) }
                                         },
                                         actions = {
                                             if (showHistoryButton) {
@@ -1240,6 +1245,10 @@ class MainActivity : FragmentActivity() {
                                                 .padding(start = 12.dp, end = 12.dp, bottom = 6.dp)
                                                 .clip(RoundedCornerShape(32.dp))
                                                 .height(bottomInset + navPadding)
+                                                .hazeEffect(state = hazeState) {
+                                                    blurRadius = 24.dp
+                                                    noiseFactor = 0f
+                                                }
                                                 // Use graphicsLayer instead of offset to avoid recomposition
                                                 // graphicsLayer runs during draw phase, not composition phase
                                                 .graphicsLayer {
@@ -1355,7 +1364,7 @@ class MainActivity : FragmentActivity() {
                                     onHomeLongHold = { showAccountDialog = true },
                                 )
                             }
-                            Box(Modifier.weight(1f)) {
+                            Box(Modifier.weight(1f).hazeSource(state = hazeState)) {
                                 // NavHost with animations (Material 3 Expressive style)
                                 NavHost(
                                     navController = navController,
@@ -1752,3 +1761,4 @@ val LocalListenTogetherManager = staticCompositionLocalOf<com.metrolist.music.li
 val LocalChangelogState = staticCompositionLocalOf<MutableState<Boolean>> { error("No LocalChangelogState provided") }
 val LocalArtistNameAliases = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
+val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }

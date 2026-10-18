@@ -6,6 +6,15 @@
 package com.metrolist.music.ui.screens.library
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -797,109 +806,28 @@ fun LibraryMixScreen(
                         headerContent()
                     }
 
-                    if (showLikedPlaylist) {
-                        item(
-                            key = "likedPlaylist",
-                            contentType = { CONTENT_TYPE_PLAYLIST },
-                        ) {
-                            PlaylistGridItem(
-                                playlist = likedPlaylist,
-                                fillMaxWidth = true,
-                                autoPlaylist = true,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(
-                                            onClick = {
-                                                navController.navigate("auto_playlist/liked")
-                                            },
-                                        ).animateItem(),
-                            )
-                        }
-                    }
-
-                    if (showDownloadedPlaylist) {
-                        item(
-                            key = "downloadedPlaylist",
-                            contentType = { CONTENT_TYPE_PLAYLIST },
-                        ) {
-                            PlaylistGridItem(
-                                playlist = downloadPlaylist,
-                                fillMaxWidth = true,
-                                autoPlaylist = true,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(
-                                            onClick = {
-                                                navController.navigate("auto_playlist/downloaded")
-                                            },
-                                        )
-                                        .animateItem(),
-                            )
-                        }
-                    }
-
-                    if (showCachedPlaylists) {
-                        item(
-                            key = "cachedPlaylist",
-                            contentType = { CONTENT_TYPE_PLAYLIST },
-                        ) {
-                            PlaylistGridItem(
-                                playlist = cachedPlaylist,
-                                fillMaxWidth = true,
-                                autoPlaylist = true,
-                                modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .combinedClickable(
-                                        onClick = {
-                                            navController.navigate("cache_playlist/cached")
-                                        },
-                                    )
-                                    .animateItem(),
-                            )
-                        }
-                    }
-
-                    if (showTopPlaylists) {
-                        item(
-                            key = "TopPlaylist",
-                            contentType = { CONTENT_TYPE_PLAYLIST },
-                        ) {
-                            PlaylistGridItem(
-                                playlist = topPlaylist,
-                                fillMaxWidth = true,
-                                autoPlaylist = true,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(
-                                            onClick = {
-                                                navController.navigate("top_playlist/$topSize")
-                                            },
-                                        ).animateItem(),
-                            )
-                        }
-                    }
-
-                    if (showUploadedPlaylists) {
-                        item(
-                            key = "uploadedPlaylist",
-                            contentType = { CONTENT_TYPE_PLAYLIST },
-                        ) {
-                            PlaylistGridItem(
-                                playlist = uploadedPlaylist,
-                                fillMaxWidth = true,
-                                autoPlaylist = true,
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            navController.navigate("auto_playlist/uploaded")
-                                        }.animateItem(),
-                            )
-                        }
+                    item(
+                        key = "prismAutoTiles",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = CONTENT_TYPE_HEADER,
+                    ) {
+                        PrismLibraryTiles(
+                            hero =
+                                if (showTopPlaylists) {
+                                    PrismTile(topPlaylist.playlist.name, "All time", R.drawable.trending_up, "top_playlist/$topSize")
+                                } else {
+                                    null
+                                },
+                            tiles =
+                                listOfNotNull(
+                                    if (showLikedPlaylist) PrismTile(likedPlaylist.playlist.name, "Your favorites", R.drawable.favorite, "auto_playlist/liked", true) else null,
+                                    if (showDownloadedPlaylist) PrismTile(downloadPlaylist.playlist.name, "Downloaded", R.drawable.offline, "auto_playlist/downloaded") else null,
+                                    if (showCachedPlaylists) PrismTile(cachedPlaylist.playlist.name, "Instant playback", R.drawable.cached, "cache_playlist/cached") else null,
+                                    if (showTopPlaylists) PrismTile(topPlaylist.playlist.name, "All time", R.drawable.trending_up, "top_playlist/$topSize") else null,
+                                    if (showUploadedPlaylists) PrismTile(uploadedPlaylist.playlist.name, "Your uploads", R.drawable.backup, "auto_playlist/uploaded") else null,
+                                ),
+                            onClick = { navController.navigate(it) },
+                        )
                     }
 
                     items(
@@ -1076,6 +1004,142 @@ fun LibraryMixScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
+        )
+    }
+}
+
+private class PrismTile(
+    val title: String,
+    val subtitle: String,
+    val icon: Int,
+    val route: String,
+    val liked: Boolean = false,
+)
+
+@Composable
+private fun PrismLibraryTiles(
+    hero: PrismTile?,
+    tiles: List<PrismTile>,
+    onClick: (String) -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        if (hero != null) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(cs.surfaceContainerHigh.copy(alpha = 0.85f))
+                        .clickable { onClick(hero.route) }
+                        .padding(20.dp),
+            ) {
+                Text(
+                    text = "MOST PLAYED",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cs.onSurfaceVariant,
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(cs.surfaceVariant.copy(alpha = 0.6f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = hero.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = hero.subtitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = cs.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .background(cs.primaryContainer)
+                            .padding(horizontal = 20.dp, vertical = 10.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.play),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = cs.onPrimaryContainer,
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = "Open",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = cs.onPrimaryContainer,
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+        tiles.chunked(2).forEach { pair ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                pair.forEach { t ->
+                    PrismTileCard(t, Modifier.weight(1f)) { onClick(t.route) }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrismTileCard(
+    t: PrismTile,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    val bg = if (t.liked) cs.errorContainer.copy(alpha = 0.45f) else cs.surfaceContainer.copy(alpha = 0.85f)
+    Column(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(24.dp))
+                .background(bg)
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(if (t.liked) cs.errorContainer else cs.surfaceContainerHighest),
+        ) {
+            Icon(
+                painter = painterResource(t.icon),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = if (t.liked) cs.onErrorContainer else cs.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = t.title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = t.subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = cs.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

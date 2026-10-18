@@ -53,8 +53,7 @@ fun LibraryScreen() {
 
     val filterContent = @Composable {
         Column {
-            PrismLibraryHeader()
-            chipsContent()
+                        chipsContent()
         }
     }
 

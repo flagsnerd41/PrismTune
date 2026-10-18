@@ -7,6 +7,8 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.LocalHazeState
+import dev.chrisbanes.haze.hazeEffect
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -380,7 +382,15 @@ private fun NewMiniPlayer(
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
                     .clip(RoundedCornerShape(32.dp))
-                    .background(color = backgroundColor.copy(alpha = 0.78f))
+                    .then(
+                        LocalHazeState.current?.let { hz ->
+                            Modifier.hazeEffect(state = hz) {
+                                blurRadius = 24.dp
+                                noiseFactor = 0f
+                            }
+                        } ?: Modifier,
+                    )
+                    .background(color = backgroundColor.copy(alpha = 0.6f))
                     .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
                     .clickable(
                         interactionSource = interactionSource,
