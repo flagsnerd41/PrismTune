@@ -1245,10 +1245,6 @@ class MainActivity : FragmentActivity() {
                                                 .padding(start = 12.dp, end = 12.dp, bottom = 6.dp)
                                                 .clip(RoundedCornerShape(32.dp))
                                                 .height(bottomInset + navPadding)
-                                                .hazeEffect(state = hazeState) {
-                                                    blurRadius = 40.dp
-                                                    noiseFactor = 0f
-                                                }
                                                 // Use graphicsLayer instead of offset to avoid recomposition
                                                 // graphicsLayer runs during draw phase, not composition phase
                                                 .graphicsLayer {
@@ -1266,7 +1262,8 @@ class MainActivity : FragmentActivity() {
                                                                 totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
                                                             slideOffset + hideOffset
                                                         }
-                                                },
+                                                }
+                                                .hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f },
                                     )
 
                                     Box(
