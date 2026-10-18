@@ -5,6 +5,12 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.res.painterResource
+import com.metrolist.music.R
 import kotlin.math.exp
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -76,30 +82,54 @@ object WelcomeSplashState {
     var shown: Boolean = false
 }
 
+private fun DrawScope.drawSplashLights(t: Float, d: Float, level: Float, colors: List<Color>) {
+    val w = size.width
+    val wire = Color(0xFF2B2118).copy(alpha = 0.85f * level)
+    for (s in 0..1) {
+        val y0 = (if (s == 0) 36f else 18f) * d
+        val sag = (if (s == 0) 34f else 22f) * d
+        val path = Path()
+        val n = 14
+        for (i in 0..n) {
+            val u = i / n.toFloat()
+            val x = -8f * d + (w + 16f * d) * u
+            val y = y0 + sag * 4f * u * (1f - u)
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(path = path, color = wire, style = Stroke(width = 1.5f * d))
+        val count = if (s == 0) 9 else 7
+        for (k in 0 until count) {
+            val u = (k + 0.5f) / count
+            val x = -8f * d + (w + 16f * d) * u
+            val y = y0 + sag * 4f * u * (1f - u) + 8f * d
+            val br = (0.8f + 0.2f * sin(t * 2.4f + k * 1.7f + s * 2f)) * level
+            val c = colors[(k + s) % colors.size]
+            drawCircle(color = c.copy(alpha = 0.18f * br), radius = 12f * d, center = Offset(x, y))
+            drawCircle(color = c.copy(alpha = 0.9f * br), radius = 4.5f * d, center = Offset(x, y))
+        }
+    }
+}
+
 @Composable
 fun WelcomeSplash(
     onFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val timeNanos = remember { mutableLongStateOf(0L) }
+    val progress = remember { Animatable(0f) }
     val overlayAlpha = remember { Animatable(1f) }
     val greeting = remember { prismGreeting() }
-    val leaves = remember { buildPrismLeaves(14, 9f, 18f, PrismLeafColors, 1f) }
-    val strands = remember { buildPrismStrands() }
+    val leaves = remember { buildPrismLeaves(7, 9f, 18f, PrismLeafColors, 1f) }
     val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
     val tertiary = MaterialTheme.colorScheme.tertiary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val gradient = listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.primaryContainer)
+    val bulbColors = remember(primary, tertiary) {
+        listOf(Color(0xFFFFE7B0), lerp(primary, Color.White, 0.45f), Color(0xFFFFE7B0), lerp(tertiary, Color.White, 0.45f))
+    }
 
     LaunchedEffect(Unit) {
-        val start = withFrameNanos { it }
-        while (true) {
-            val now = withFrameNanos { it } - start
-            timeNanos.longValue = now
-            if (now >= 3_300_000_000L) break
-        }
-        overlayAlpha.animateTo(0f, tween(500))
+        progress.animateTo(1f, tween(2300, easing = LinearEasing))
+        overlayAlpha.animateTo(0f, tween(350))
         onFinished()
     }
 
@@ -116,47 +146,36 @@ fun WelcomeSplash(
                 ) { },
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val t = timeNanos.longValue / 1_000_000_000f
+            val t = progress.value * 2.3f
             val d = 1.dp.toPx()
-            val wind = prismWind(t)
-            val drop = (t / 1.2f).coerceIn(0f, 1f)
-            val eased = 1f - (1f - drop) * (1f - drop)
-            val level = ((t - 0.9f) / 0.8f).coerceIn(0f, 1f)
-            val leafFade = ((t - 0.5f) / 0.8f).coerceIn(0f, 1f)
-            drawPrismLeaves(leaves, t, size.width, size.height, d, wind, primary, leafFade)
-            drawPrismFairyLights(
-                strands,
-                t,
-                size.width,
-                size.height,
-                d,
-                wind,
-                primary,
-                secondary,
-                tertiary,
-                level,
-                -(1f - eased) * size.height * 0.3f,
-            )
+            val leafFade = ((t - 0.4f) / 0.6f).coerceIn(0f, 1f)
+            drawPrismLeaves(leaves, t, size.width, size.height, d, 0.35f, primary, leafFade, false)
+            drawSplashLights(t, d, ((t - 0.3f) / 0.6f).coerceIn(0f, 1f), bulbColors)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = greeting,
                 color = onSurface.copy(alpha = 0.85f),
                 style = MaterialTheme.typography.titleLarge,
-                modifier =
-                    Modifier.graphicsLayer {
-                        alpha = ((timeNanos.longValue / 1_000_000_000f - 0.2f) / 0.6f).coerceIn(0f, 1f)
-                    },
+                modifier = Modifier.graphicsLayer { alpha = ((progress.value * 2.3f - 0.2f) / 0.6f).coerceIn(0f, 1f) },
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row {
-                "PrismTune".forEachIndexed { i, c ->
-                    PrismSplashLetter(
-                        ch = c,
-                        index = i,
-                        timeOf = { timeNanos.longValue / 1_000_000_000f },
-                        glow = primary,
-                        textColor = onSurface,
+                "PrismTune".forEachIndexed { i, ch ->
+                    Text(
+                        text = ch.toString(),
+                        color = onSurface,
+                        style =
+                            MaterialTheme.typography.displayMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                shadow = Shadow(color = primary.copy(alpha = 0.8f), offset = Offset.Zero, blurRadius = 24f),
+                            ),
+                        modifier =
+                            Modifier.graphicsLayer {
+                                val a = ((progress.value * 2.3f - (0.6f + i * 0.09f)) / 0.25f).coerceIn(0f, 1f)
+                                alpha = a
+                                translationY = (1f - a) * 24f
+                            },
                     )
                 }
             }
@@ -165,46 +184,10 @@ fun WelcomeSplash(
                 text = "Let the music glow",
                 color = onSurface.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyLarge,
-                modifier =
-                    Modifier.graphicsLayer {
-                        alpha = ((timeNanos.longValue / 1_000_000_000f - 2.1f) / 0.6f).coerceIn(0f, 1f)
-                    },
+                modifier = Modifier.graphicsLayer { alpha = ((progress.value * 2.3f - 1.6f) / 0.5f).coerceIn(0f, 1f) },
             )
         }
     }
-}
-
-@Composable
-private fun PrismSplashLetter(
-    ch: Char,
-    index: Int,
-    timeOf: () -> Float,
-    glow: Color,
-    textColor: Color,
-) {
-    val t = timeOf()
-    val a = ((t - (1.0f + index * 0.09f)) / 0.25f).coerceIn(0f, 1f)
-    val sweep = (t - 1.3f) * 7f
-    val g = (1f - abs(sweep - index) / 2.2f).coerceIn(0f, 1f)
-    Text(
-        text = ch.toString(),
-        color = textColor,
-        style =
-            MaterialTheme.typography.displayMedium.copy(
-                fontWeight = FontWeight.Bold,
-                shadow =
-                    Shadow(
-                        color = glow.copy(alpha = 0.35f + 0.65f * g),
-                        offset = Offset.Zero,
-                        blurRadius = 18f + 40f * g,
-                    ),
-            ),
-        modifier =
-            Modifier.graphicsLayer {
-                alpha = a
-                translationY = (1f - a) * 24f
-            },
-    )
 }
 
 private fun prismGreeting(): String {
@@ -279,42 +262,20 @@ fun PrismHeader(modifier: Modifier = Modifier) {
 
 @Composable
 fun PrismTitleBanner(modifier: Modifier = Modifier) {
-    val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
-    val tertiary = MaterialTheme.colorScheme.tertiary
-    val pulse by rememberInfiniteTransition(label = "titleGlow").animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "titleGlowPulse",
-    )
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-            modifier
-                .height(40.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(
-                    Brush.linearGradient(
-                        listOf(primary.copy(alpha = 0.60f), secondary.copy(alpha = 0.45f), tertiary.copy(alpha = 0.60f)),
-                    ),
-                ).drawBehind {
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.16f * pulse),
-                        radius = size.height * 0.9f,
-                        center = Offset(size.width * 0.85f, size.height * 0.1f),
-                    )
-                }.padding(horizontal = 16.dp),
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
     ) {
+        Image(
+            painter = painterResource(R.drawable.prism_header_icon),
+            contentDescription = null,
+            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)),
+        )
+        Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = "PrismTune",
-            color = Color.White,
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp,
-                    shadow = Shadow(color = Color.White.copy(alpha = pulse), offset = Offset.Zero, blurRadius = 24f),
-                ),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
         )
     }
 }
@@ -607,7 +568,7 @@ private fun PrismStrand.step(
     lastT = t
     if (dt <= 0f) return
     if (dt > 0.05f) dt = 0.05f
-    val sub = 2
+    val sub = 1
     val sdt = dt / sub
     val g = 900f * d
     for (step in 0 until sub) {
@@ -617,17 +578,17 @@ private fun PrismStrand.step(
         py[n] = yb
         for (i in 1 until n) {
             val u = i.toFloat() / n
-            val local = wind * (0.8f + 0.4f * sin(t * 0.8f + u * 3.2f + seed * 2f)) + 0.12f * sin(t * 3.1f + i * 0.9f)
-            val ax = local * 420f * d
-            val ay = g - local * 40f * d
-            val vx = (px[i] - ox[i]) * 0.985f
-            val vy = (py[i] - oy[i]) * 0.985f
+            val local = wind * (0.8f + 0.4f * sin(t * 0.8f + u * 3.2f + seed * 2f)) + 0.04f * sin(t * 3.1f + i * 0.9f)
+            val ax = local * 140f * d * prismGust(t)
+            val ay = g - local * 12f * d
+            val vx = (px[i] - ox[i]) * 0.96f
+            val vy = (py[i] - oy[i]) * 0.96f
             ox[i] = px[i]
             oy[i] = py[i]
             px[i] += vx + ax * sdt * sdt
             py[i] += vy + ay * sdt * sdt
         }
-        for (iter in 0 until 8) {
+        for (iter in 0 until 5) {
             for (i in 0 until n) {
                 val dx = px[i + 1] - px[i]
                 val dy = py[i + 1] - py[i]
@@ -657,8 +618,8 @@ private fun PrismStrand.step(
         val nodeVx = (px[k] - ox[k]) / sdt
         val phase = i * 1.7f + seed * 3.1f
         val acc =
-            -26f * sin(theta[i]) - 2.2f * omega[i] +
-                wind * 8f * (0.6f + 0.4f * sin(t * 2.1f + phase)) - nodeVx / (40f * d)
+            -26f * sin(theta[i]) - 4.5f * omega[i] +
+                wind * 3f * prismGust(t) * (0.6f + 0.4f * sin(t * 2.1f + phase)) - nodeVx / (40f * d)
         omega[i] += acc * dt
         theta[i] = (theta[i] + omega[i] * dt).coerceIn(-1.1f, 1.1f)
     }
@@ -671,18 +632,8 @@ private fun DrawScope.drawPrismBulb(
     b: Float,
     d: Float,
 ) {
-    val glowBig = 34f * d * (0.7f + 0.3f * b)
-    drawCircle(
-        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.26f * b), Color.Transparent), center = c, radius = glowBig),
-        radius = glowBig,
-        center = c,
-    )
-    val glowMid = 16f * d
-    drawCircle(
-        brush = Brush.radialGradient(colors = listOf(bulb.copy(alpha = 0.55f * b), Color.Transparent), center = c, radius = glowMid),
-        radius = glowMid,
-        center = c,
-    )
+    drawCircle(color = bulb.copy(alpha = 0.10f * b), radius = 18f * d, center = c)
+    drawCircle(color = bulb.copy(alpha = 0.22f * b), radius = 10f * d, center = c)
     drawCircle(color = lerp(Color(0xFF3A322B), bulb, b), radius = r, center = c)
     drawCircle(color = Color.White.copy(alpha = 0.75f * b), radius = 0.45f * r, center = c)
 }
@@ -742,8 +693,8 @@ private fun DrawScope.drawPrismFairyLights(
 
             val phase = i * 1.7f + s.seed * 3.1f
             val gust = max(0f, wind - 0.55f)
-            val flick = 0.84f + 0.10f * sin(t * (2.1f + (i % 3) * 0.8f) + phase) + 0.06f * sin(t * 7.3f + phase * 1.7f)
-            val dip = 1f - 0.5f * gust * (0.5f + 0.5f * sin(t * 14f + phase * 2.3f))
+            val flick = 0.84f + 0.05f * prismGust(t) * sin(t * (1.2f + (i % 3) * 0.4f) * prismGust(t) + phase) + 0.02f * prismGust(t) * sin(t * 4f * prismGust(t) + phase * 1.7f)
+            val dip = 1f - 0.5f * gust * (0.5f + 0.5f * sin(t * 6f + phase * 2.3f))
             val b = (flick * dip).coerceIn(0.3f, 1f) * level
             drawPrismBulb(center, r, palette[(i + s.seed.toInt()) % palette.size], b, d)
         }
@@ -1048,4 +999,11 @@ fun PrismLibraryHeader(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+private fun prismGust(t: Float): Float {
+    val ph = t % 30f
+    if (ph < 25f) return 1f
+    val x = (ph - 25f) / 5f
+    return 1f + 2.2f * sin(Math.PI.toFloat() * x)
 }

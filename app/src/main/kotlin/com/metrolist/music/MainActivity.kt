@@ -1137,14 +1137,14 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                                scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+                                                containerColor = if (pureBlack) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
+                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            Modifier.windowInsetsPadding(
+                                            Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }.windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))
