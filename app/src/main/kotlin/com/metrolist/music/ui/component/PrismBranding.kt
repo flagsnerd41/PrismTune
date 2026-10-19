@@ -7,6 +7,9 @@ package com.metrolist.music.ui.component
 import androidx.compose.animation.core.Animatable
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.ui.screens.settings.PrismBassPulseKey
+import com.metrolist.music.ui.screens.settings.PrismGustEveryKey
+import com.metrolist.music.ui.screens.settings.PrismGustPowerKey
+import com.metrolist.music.ui.screens.settings.PrismHomeLightsKey
 import com.metrolist.music.utils.rememberPreference
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.Image
@@ -184,7 +187,7 @@ fun WelcomeSplash(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Let the music glow",
+                text = prismTagline(),
                 color = onSurface.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.graphicsLayer { alpha = ((progress.value * 2.3f - 1.6f) / 0.5f).coerceIn(0f, 1f) },
@@ -885,6 +888,12 @@ fun PrismNature(
     val powerSave = rememberPrismPowerSave()
     val running = active && enabled && !powerSave
     PrismBassPulse(running)
+    val gustEvery by rememberPreference(PrismGustEveryKey, defaultValue = 30f)
+    val gustPower by rememberPreference(PrismGustPowerKey, defaultValue = 2.2f)
+    androidx.compose.runtime.SideEffect {
+        prismGustPeriod = gustEvery.coerceAtLeast(10f)
+        prismGustPower = gustPower
+    }
     val timeNanos = remember { mutableLongStateOf(0L) }
     LaunchedEffect(running) {
         if (running) {
@@ -933,8 +942,9 @@ fun PrismHomeLights(modifier: Modifier = Modifier) {
     val enabled by rememberPreference(PrismNatureKey, defaultValue = true)
     val windStrength by rememberPreference(PrismWindStrengthKey, defaultValue = 1f)
     val timeNanos = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(enabled) {
-        if (enabled && PRISM_HOME_LIGHTS) {
+    val homeLightsOn by rememberPreference(PrismHomeLightsKey, defaultValue = false)
+    LaunchedEffect(enabled, homeLightsOn) {
+        if (enabled && homeLightsOn) {
             val start = withFrameNanos { it }
             while (true) {
                 withFrameNanos { timeNanos.longValue = it - start }
@@ -947,7 +957,7 @@ fun PrismHomeLights(modifier: Modifier = Modifier) {
     val strands = remember { buildPrismHomeStrands() }
 
     Canvas(modifier = modifier) {
-        if (!enabled || !PRISM_HOME_LIGHTS) return@Canvas
+        if (!enabled || !homeLightsOn) return@Canvas
         val t = timeNanos.longValue / 1_000_000_000f
         val d = 1.dp.toPx()
         val wind = prismWind(t) * windStrength
@@ -1009,11 +1019,29 @@ fun PrismLibraryHeader(modifier: Modifier = Modifier) {
     }
 }
 
+@Volatile
+private var prismGustPeriod = 30f
+
+@Volatile
+private var prismGustPower = 2.2f
+
 private fun prismGust(t: Float): Float {
-    val ph = t % 30f
-    if (ph < 25f) return 1f
-    val x = (ph - 25f) / 5f
-    return 1f + 2.2f * sin(Math.PI.toFloat() * x)
+    val per = prismGustPeriod
+    val ph = t % per
+    val start = per - 5f
+    if (ph < start) return 1f
+    val x = (ph - start) / 5f
+    return 1f + prismGustPower * sin(Math.PI.toFloat() * x)
+}
+
+private fun prismTagline(): String {
+    val h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (h) {
+        in 5..11 -> "Wake up to something warm"
+        in 12..17 -> "Keep the glow going"
+        in 18..22 -> "Light the lights, press play"
+        else -> "Soft sounds for late nights"
+    }
 }
 
 @Composable

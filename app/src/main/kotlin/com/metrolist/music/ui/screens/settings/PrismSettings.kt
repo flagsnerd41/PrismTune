@@ -41,6 +41,9 @@ import com.metrolist.music.utils.rememberPreference
 
 val PrismBlurStrengthKey = floatPreferencesKey("prismBlurStrength")
 val PrismBassPulseKey = booleanPreferencesKey("prismBassPulse")
+val PrismGustEveryKey = floatPreferencesKey("prismGustEvery")
+val PrismGustPowerKey = floatPreferencesKey("prismGustPower")
+val PrismHomeLightsKey = booleanPreferencesKey("prismHomeLights")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,9 @@ fun PrismSettings(navController: NavController) {
     val context = LocalContext.current
     var blur by rememberPreference(PrismBlurStrengthKey, defaultValue = 40f)
     var bass by rememberPreference(PrismBassPulseKey, defaultValue = false)
+    var gustEvery by rememberPreference(PrismGustEveryKey, defaultValue = 30f)
+    var gustPower by rememberPreference(PrismGustPowerKey, defaultValue = 2.2f)
+    var homeLights by rememberPreference(PrismHomeLightsKey, defaultValue = false)
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             bass = granted
@@ -99,6 +105,31 @@ fun PrismSettings(navController: NavController) {
                     }
                 },
             )
+        }
+        Spacer(Modifier.height(28.dp))
+
+        Text(text = "Wind gust every " + gustEvery.toInt() + "s", style = MaterialTheme.typography.titleMedium)
+        Slider(value = gustEvery, onValueChange = { gustEvery = it }, valueRange = 10f..60f)
+        Text(text = "Gust strength: " + "%.1f".format(gustPower), style = MaterialTheme.typography.titleMedium)
+        Slider(value = gustPower, onValueChange = { gustPower = it }, valueRange = 0f..4f)
+        Text(
+            text = "A 5 second burst of faster wind and flickering lights. Strength 0 turns it off.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(28.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(text = "Home fairy lights", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "Show the lights across the top of the Home screen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = homeLights, onCheckedChange = { homeLights = it })
         }
         Spacer(Modifier.height(16.dp))
     }

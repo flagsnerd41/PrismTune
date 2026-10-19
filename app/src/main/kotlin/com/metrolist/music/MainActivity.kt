@@ -1057,6 +1057,7 @@ class MainActivity : FragmentActivity() {
                 val powerSave = rememberPrismPowerSave()
                 val blurStrength by rememberPreference(PrismBlurStrengthKey, defaultValue = 40f)
                 val blurOff = powerSave || blurStrength <= 1f || currentRoute == Screens.Home.route
+                val topBlurOff = powerSave || blurStrength <= 1f
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -1143,14 +1144,14 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
+                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (topBlurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
                                                 scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            (if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }).windowInsetsPadding(
+                                            (if (topBlurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }).windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))
