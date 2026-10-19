@@ -116,6 +116,8 @@ private fun DrawScope.drawSplashLights(t: Float, d: Float, level: Float, colors:
     }
 }
 
+private fun prismSeg(t: Float, start: Float, dur: Float): Float = ((t - start) / dur).coerceIn(0f, 1f)
+
 @Composable
 fun WelcomeSplash(
     onFinished: () -> Unit,
@@ -123,17 +125,20 @@ fun WelcomeSplash(
 ) {
     val progress = remember { Animatable(0f) }
     val overlayAlpha = remember { Animatable(1f) }
+    val iconScale = remember { Animatable(0.55f) }
     val greeting = remember { prismGreeting() }
-    val leaves = remember { buildPrismLeaves(7, 9f, 18f, PrismLeafColors, 1f) }
     val primary = MaterialTheme.colorScheme.primary
-    val tertiary = MaterialTheme.colorScheme.tertiary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val gradient = listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.primaryContainer)
-    val bulbColors = remember(primary, tertiary) {
-        listOf(Color(0xFFFFE7B0), lerp(primary, Color.White, 0.45f), Color(0xFFFFE7B0), lerp(tertiary, Color.White, 0.45f))
-    }
+    val breathe by rememberInfiniteTransition(label = "splashBreathe").animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "splashBreatheV",
+    )
 
     LaunchedEffect(Unit) {
+        launch { iconScale.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessLow)) }
         progress.animateTo(1f, tween(2300, easing = LinearEasing))
         overlayAlpha.animateTo(0f, tween(350))
         onFinished()
@@ -154,43 +159,61 @@ fun WelcomeSplash(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val t = progress.value * 2.3f
             val d = 1.dp.toPx()
-            val leafFade = ((t - 0.4f) / 0.6f).coerceIn(0f, 1f)
-            drawPrismLeaves(leaves, t, size.width, size.height, d, 0.35f, primary, leafFade, false)
-            drawSplashLights(t, d, ((t - 0.3f) / 0.6f).coerceIn(0f, 1f), bulbColors)
+            val a = prismSeg(t, 0.1f, 0.8f)
+            val c = Offset(size.width / 2f, size.height / 2f - 30f * d)
+            val r = 170f * d * breathe
+            drawCircle(
+                brush = Brush.radialGradient(listOf(primary.copy(alpha = 0.40f * a), Color.Transparent), center = c, radius = r),
+                radius = r,
+                center = c,
+            )
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(R.drawable.ic_prism_p),
+                contentDescription = null,
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(onSurface),
+                modifier =
+                    Modifier
+                        .width(86.dp)
+                        .height(96.dp)
+                        .graphicsLayer {
+                            scaleX = iconScale.value
+                            scaleY = iconScale.value
+                            alpha = prismSeg(progress.value * 2.3f, 0f, 0.5f)
+                        },
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "PrismTune",
+                color = onSurface,
+                style =
+                    MaterialTheme.typography.displaySmall.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 3.sp,
+                        shadow = Shadow(color = primary.copy(alpha = 0.8f), offset = Offset.Zero, blurRadius = 24f),
+                    ),
+                modifier =
+                    Modifier.graphicsLayer {
+                        val a = prismSeg(progress.value * 2.3f, 0.7f, 0.7f)
+                        alpha = a
+                        translationY = (1f - a) * 40f
+                        scaleX = 0.94f + 0.06f * a
+                        scaleY = 0.94f + 0.06f * a
+                    },
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = greeting,
-                color = onSurface.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.graphicsLayer { alpha = ((progress.value * 2.3f - 0.2f) / 0.6f).coerceIn(0f, 1f) },
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row {
-                "PrismTune".forEachIndexed { i, ch ->
-                    Text(
-                        text = ch.toString(),
-                        color = onSurface,
-                        style =
-                            MaterialTheme.typography.displayMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                shadow = Shadow(color = primary.copy(alpha = 0.8f), offset = Offset.Zero, blurRadius = 24f),
-                            ),
-                        modifier =
-                            Modifier.graphicsLayer {
-                                val a = ((progress.value * 2.3f - (0.6f + i * 0.09f)) / 0.25f).coerceIn(0f, 1f)
-                                alpha = a
-                                translationY = (1f - a) * 24f
-                            },
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = prismTagline(),
-                color = onSurface.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.graphicsLayer { alpha = ((progress.value * 2.3f - 1.6f) / 0.5f).coerceIn(0f, 1f) },
+                color = onSurface.copy(alpha = 0.8f),
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        letterSpacing = 1.sp,
+                    ),
+                modifier = Modifier.graphicsLayer { alpha = prismSeg(progress.value * 2.3f, 1.4f, 0.5f) },
             )
         }
     }
@@ -273,15 +296,16 @@ fun PrismTitleBanner(modifier: Modifier = Modifier) {
         modifier = modifier,
     ) {
         Image(
-            painter = painterResource(R.drawable.prism_header_icon),
+            painter = painterResource(R.drawable.ic_prism_p),
             contentDescription = null,
-            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)),
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
+            modifier = Modifier.height(30.dp).width(27.dp),
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = "PrismTune",
             color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
         )
     }
 }
