@@ -7,6 +7,7 @@
 
 package com.metrolist.music.ui.player
 
+import com.metrolist.music.LocalHazeStrength
 import com.metrolist.music.LocalHazeState
 import dev.chrisbanes.haze.hazeEffect
 import android.content.res.Configuration
@@ -384,8 +385,9 @@ private fun NewMiniPlayer(
                     .clip(RoundedCornerShape(32.dp))
                     .then(
                         LocalHazeState.current?.let { hz ->
+                            val hzStrength = LocalHazeStrength.current
                             Modifier.hazeEffect(state = hz) {
-                                blurRadius = 40.dp
+                                blurRadius = hzStrength.dp
                                 noiseFactor = 0f
                             }
                         } ?: Modifier,

@@ -50,6 +50,7 @@ import com.metrolist.music.ui.screens.settings.BackupAndRestore
 import com.metrolist.music.ui.screens.settings.ContentSettings
 import com.metrolist.music.ui.screens.settings.DarkMode
 import com.metrolist.music.ui.screens.settings.PlayerSettings
+import com.metrolist.music.ui.screens.settings.PrismSettings
 import com.metrolist.music.ui.screens.settings.PrivacySettings
 import com.metrolist.music.ui.screens.settings.RomanizationSettings
 import com.metrolist.music.ui.screens.settings.SettingsScreen
@@ -346,6 +347,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("settings") {
         SettingsScreen(navController, latestVersionName)
+    }
+
+    composable("settings/prism") {
+        PrismSettings(navController)
     }
 
     composable("settings/appearance") {

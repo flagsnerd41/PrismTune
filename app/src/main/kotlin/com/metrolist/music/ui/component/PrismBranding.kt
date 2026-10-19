@@ -5,6 +5,9 @@
 package com.metrolist.music.ui.component
 
 import androidx.compose.animation.core.Animatable
+import com.metrolist.music.LocalPlayerConnection
+import com.metrolist.music.ui.screens.settings.PrismBassPulseKey
+import com.metrolist.music.utils.rememberPreference
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
@@ -632,10 +635,11 @@ private fun DrawScope.drawPrismBulb(
     b: Float,
     d: Float,
 ) {
-    drawCircle(color = bulb.copy(alpha = 0.10f * b), radius = 18f * d, center = c)
-    drawCircle(color = bulb.copy(alpha = 0.22f * b), radius = 10f * d, center = c)
-    drawCircle(color = lerp(Color(0xFF3A322B), bulb, b), radius = r, center = c)
-    drawCircle(color = Color.White.copy(alpha = 0.75f * b), radius = 0.45f * r, center = c)
+    val p = prismPulse
+    drawCircle(color = bulb.copy(alpha = (0.10f + 0.22f * p).coerceAtMost(1f) * b), radius = (18f + 16f * p) * d, center = c)
+    drawCircle(color = bulb.copy(alpha = (0.22f + 0.30f * p).coerceAtMost(1f) * b), radius = (10f + 6f * p) * d, center = c)
+    drawCircle(color = lerp(Color(0xFF3A322B), bulb, (b + 0.3f * p).coerceIn(0f, 1f)), radius = r * (1f + 0.3f * p), center = c)
+    drawCircle(color = Color.White.copy(alpha = (0.75f + 0.25f * p).coerceAtMost(1f) * b), radius = 0.45f * r, center = c)
 }
 
 private fun DrawScope.drawPrismFairyLights(
@@ -880,6 +884,7 @@ fun PrismNature(
     val isNight = remember { prismIsNight() }
     val powerSave = rememberPrismPowerSave()
     val running = active && enabled && !powerSave
+    PrismBassPulse(running)
     val timeNanos = remember { mutableLongStateOf(0L) }
     LaunchedEffect(running) {
         if (running) {
@@ -1032,4 +1037,59 @@ fun rememberPrismPowerSave(): Boolean {
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
     return state.value
+}
+
+@Volatile
+private var prismPulse = 0f
+
+@Composable
+private fun PrismBassPulse(active: Boolean) {
+    val on by rememberPreference(PrismBassPulseKey, defaultValue = false)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val pc = LocalPlayerConnection.current
+    val granted =
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    val session = pc?.player?.audioSessionId ?: 0
+    androidx.compose.runtime.DisposableEffect(on, active, granted, session) {
+        var vis: android.media.audiofx.Visualizer? = null
+        if (on && active && granted) {
+            vis =
+                try {
+                    android.media.audiofx.Visualizer(session).apply {
+                        setCaptureSize(android.media.audiofx.Visualizer.getCaptureSizeRange()[1])
+                        setDataCaptureListener(
+                            object : android.media.audiofx.Visualizer.OnDataCaptureListener {
+                                override fun onWaveFormDataCapture(v: android.media.audiofx.Visualizer?, w: ByteArray?, r: Int) {}
+
+                                override fun onFftDataCapture(v: android.media.audiofx.Visualizer?, fft: ByteArray?, r: Int) {
+                                    if (fft == null || fft.size < 12) return
+                                    var sum = 0f
+                                    for (k in 1..4) {
+                                        val re = fft[2 * k].toFloat()
+                                        val im = fft[2 * k + 1].toFloat()
+                                        sum += kotlin.math.sqrt(re * re + im * im)
+                                    }
+                                    val raw = (sum / 4f / 80f).coerceIn(0f, 1f)
+                                    prismPulse = if (raw > prismPulse) raw else prismPulse * 0.82f
+                                }
+                            },
+                            android.media.audiofx.Visualizer.getMaxCaptureRate() / 2,
+                            false,
+                            true,
+                        )
+                        setEnabled(true)
+                    }
+                } catch (e: Throwable) {
+                    null
+                }
+        }
+        onDispose {
+            runCatching {
+                vis?.setEnabled(false)
+                vis?.release()
+            }
+            prismPulse = 0f
+        }
+    }
 }

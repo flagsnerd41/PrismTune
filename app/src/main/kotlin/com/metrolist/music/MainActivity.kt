@@ -138,6 +138,7 @@ import coil3.request.allowHardware
 import coil3.request.crossfade
 import coil3.toBitmap
 import dev.chrisbanes.haze.HazeState
+import com.metrolist.music.ui.screens.settings.PrismBlurStrengthKey
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.metrolist.innertube.YouTube
@@ -1054,7 +1055,8 @@ class MainActivity : FragmentActivity() {
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
                 val hazeState = remember { HazeState() }
                 val powerSave = rememberPrismPowerSave()
-                val blurOff = powerSave || currentRoute == Screens.Home.route
+                val blurStrength by rememberPreference(PrismBlurStrengthKey, defaultValue = 40f)
+                val blurOff = powerSave || blurStrength <= 1f || currentRoute == Screens.Home.route
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 
                 CompositionLocalProvider(
@@ -1070,6 +1072,7 @@ class MainActivity : FragmentActivity() {
                     LocalChangelogState provides showChangelog,
                     LocalArtistNameAliases provides artistNameAliases,
                     LocalHazeState provides (if (blurOff) null else hazeState),
+                    LocalHazeStrength provides blurStrength,
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1147,7 +1150,7 @@ class MainActivity : FragmentActivity() {
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            (if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }).windowInsetsPadding(
+                                            (if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }).windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))
@@ -1266,7 +1269,7 @@ class MainActivity : FragmentActivity() {
                                                             slideOffset + hideOffset
                                                         }
                                                 }
-                                                .then(if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = 40.dp; noiseFactor = 0f }),
+                                                .then(if (blurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }),
                                     )
 
                                     Box(
@@ -1762,3 +1765,4 @@ val LocalChangelogState = staticCompositionLocalOf<MutableState<Boolean>> { erro
 val LocalArtistNameAliases = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
 val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
+val LocalHazeStrength = compositionLocalOf { 40f }

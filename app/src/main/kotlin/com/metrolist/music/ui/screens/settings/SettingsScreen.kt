@@ -88,6 +88,19 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Material3SettingsGroup(
+            title = "PrismTune",
+            items = listOf(
+                Material3SettingsItem(
+                    icon = painterResource(R.drawable.palette),
+                    title = { Text("Prism effects") },
+                    onClick = { navController.navigate("settings/prism") }
+                )
+            )
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Player & Content Section (moved up and combined with content)
         Material3SettingsGroup(
             title = stringResource(R.string.settings_section_player_content),
