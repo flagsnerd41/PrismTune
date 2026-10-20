@@ -1095,28 +1095,28 @@ class MainActivity : FragmentActivity() {
                                         },
                                         actions = {
                                             if (showHistoryButton) {
-                                                FilledTonalIconButton(onClick = { navController.navigate("history") }) {
+                                                FilledTonalIconButton(colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f), contentColor = MaterialTheme.colorScheme.onSurface), onClick = { navController.navigate("history") }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.history),
                                                         contentDescription = stringResource(R.string.history),
                                                     )
                                                 }
                                             }
-                                            FilledTonalIconButton(onClick = { navController.navigate("stats") }) {
+                                            FilledTonalIconButton(colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f), contentColor = MaterialTheme.colorScheme.onSurface), onClick = { navController.navigate("stats") }) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.stats),
                                                     contentDescription = stringResource(R.string.stats),
                                                 )
                                             }
                                             if (listenTogetherInTopBar) {
-                                                FilledTonalIconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
+                                                FilledTonalIconButton(colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f), contentColor = MaterialTheme.colorScheme.onSurface), onClick = { navController.navigate("listen_together_from_topbar") }) {
                                                     Icon(
                                                         painter = painterResource(R.drawable.group_outlined),
                                                         contentDescription = stringResource(R.string.together),
                                                     )
                                                 }
                                             }
-                                            FilledTonalIconButton(onClick = { showAccountDialog = true }) {
+                                            FilledTonalIconButton(colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f), contentColor = MaterialTheme.colorScheme.onSurface), onClick = { showAccountDialog = true }) {
                                                 BadgedBox(badge = {
                                                     if (latestVersionName != BuildConfig.BASE_VERSION_NAME) {
                                                         Badge()
@@ -1144,14 +1144,14 @@ class MainActivity : FragmentActivity() {
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors =
                                             TopAppBarDefaults.topAppBarColors(
-                                                containerColor = if (pureBlack) Color.Black.copy(alpha = if (topBlurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
-                                                scrolledContainerColor = if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f),
+                                                containerColor = if (currentRoute == Screens.Home.route || currentRoute == Screens.Library.route) Color.Transparent else (if (pureBlack) Color.Black.copy(alpha = if (topBlurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f)),
+                                                scrolledContainerColor = if (currentRoute == Screens.Home.route || currentRoute == Screens.Library.route) (if (pureBlack) Color.Black else MaterialTheme.colorScheme.surface) else (if (pureBlack) Color.Black.copy(alpha = if (blurOff) 1f else 0.4f) else MaterialTheme.colorScheme.surfaceContainer.copy(alpha = if (blurOff) 1f else 0.4f)),
                                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                                 actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                             ),
                                         modifier =
-                                            (if (topBlurOff) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }).windowInsetsPadding(
+                                            (if (topBlurOff || currentRoute == Screens.Home.route || currentRoute == Screens.Library.route) Modifier else Modifier.hazeEffect(state = hazeState) { blurRadius = blurStrength.dp; noiseFactor = 0f }).windowInsetsPadding(
                                                 if (showRail) {
                                                     WindowInsets(left = NavigationBarHeight)
                                                         .add(cutoutInsets.only(WindowInsetsSides.Start))
