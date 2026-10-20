@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.metrolist.music.LocalHazeState
 import com.metrolist.music.ui.screens.Screens
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -45,7 +46,7 @@ fun PrismNavBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+        color = (if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer).copy(alpha = if (LocalHazeState.current != null) 0.18f else 1f),
         modifier = modifier,
     ) {
         Row(

@@ -1056,7 +1056,7 @@ class MainActivity : FragmentActivity() {
                 val hazeState = remember { HazeState() }
                 val powerSave = rememberPrismPowerSave()
                 val blurStrength by rememberPreference(PrismBlurStrengthKey, defaultValue = 40f)
-                val blurOff = powerSave || blurStrength <= 1f || currentRoute == Screens.Home.route
+                val blurOff = powerSave || blurStrength <= 1f
                 val topBlurOff = powerSave || blurStrength <= 1f
                 val artistNameAliases by ArtistNameAliases.aliases.collectAsStateWithLifecycle()
 

@@ -32,7 +32,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import androidx.compose.ui.graphics.Color
 import coil3.compose.AsyncImage
+import dev.chrisbanes.haze.hazeEffect
+import com.metrolist.music.LocalHazeState
+import com.metrolist.music.LocalHazeStrength
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
 import com.metrolist.music.constants.MiniPlayerHeight
@@ -51,6 +55,8 @@ fun MiniPlayer(
     val canSkipNext by playerConnection.canSkipNext.collectAsState()
     val canSkipPrevious by playerConnection.canSkipPrevious.collectAsState()
     val primary = MaterialTheme.colorScheme.primary
+    val haze = LocalHazeState.current
+    val hazeStrength = LocalHazeStrength.current
 
     Box(
         modifier =
@@ -62,10 +68,19 @@ fun MiniPlayer(
         Surface(
             onClick = onClick,
             shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = Color.Transparent,
             modifier = Modifier.fillMaxSize(),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (haze != null) Modifier.hazeEffect(state = haze) { blurRadius = hazeStrength.dp; noiseFactor = 0f } else Modifier,
+                            )
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = if (haze != null) 0.18f else 1f)),
+                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp),
