@@ -191,7 +191,7 @@ import com.metrolist.music.playback.MusicService.MusicBinder
 import com.metrolist.music.playback.PlayerConnection
 import com.metrolist.music.playback.queues.YouTubeQueue
 import com.metrolist.music.ui.component.AccountSettingsDialog
-import com.metrolist.music.ui.component.AppNavigationBar
+import com.metrolist.music.ui.component.PrismNavBar
 import com.metrolist.music.ui.component.AppNavigationRail
 import com.metrolist.music.ui.component.BottomSheetMenu
 import com.metrolist.music.ui.component.BottomSheetPage
@@ -1238,7 +1238,7 @@ class MainActivity : FragmentActivity() {
                                         )
                                     }
 
-                                    AppNavigationBar(
+                                    PrismNavBar(
                                         navigationItems = navigationItems,
                                         currentRoute = currentRoute,
                                         onItemClick = onNavItemClick,

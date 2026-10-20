@@ -143,7 +143,7 @@ class ProgressState(
 }
 
 @Composable
-fun MiniPlayer(
+private fun OldMiniPlayer(
     positionState: MutableLongState,
     durationState: MutableLongState,
     modifier: Modifier = Modifier,
